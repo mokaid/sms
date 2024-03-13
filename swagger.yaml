@@ -1,0 +1,222 @@
+swagger: '2.0'
+info:
+  title: Sample API
+  version: '1.0.0'
+  description: Example docs
+tags:
+  - name: users
+    description: users API
+  - name: Authentication
+    description: Authentication API
+# Define security schemes (API Key, JWT)
+securityDefinitions:
+  ApiKeyAuth:
+    type: apiKey
+    in: header
+    name: X-API-KEY
+  BearerAuth:
+    type: apiKey
+    in: header
+    name: Authorization
+# Apply security globally (can also be applied per operation)
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []
+# Paths definition
+
+
+
+paths:
+  /signup:
+    post:
+      tags:
+        - Authentication
+      summary: "User signup"
+      description: "This endpoint registers a new user."
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: "User data for signup"
+          required: true
+          schema:
+            $ref: '#/definitions/users'
+      responses:
+        "200":
+          description: "User successfully registered"
+          schema:
+            $ref: '#/definitions/User'
+        "409":
+          description: "Email already exists or other conflict error"
+
+  /login:
+    post:
+      tags:
+        - Authentication
+      summary: "User login"
+      description: "This endpoint authenticates a user and returns a cookie."
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: "User credentials"
+          required: true
+          schema:
+            $ref: '#/definitions/users'
+      responses:
+        "200":
+          description: "User successfully authenticated"
+          schema:
+            type: object
+            properties:
+              cookie:
+                type: string
+              findUser:
+                $ref: '#/definitions/User'
+        "409":
+          description: "Authentication failed"
+
+  /logout:
+    post:
+      tags:
+        - Authentication
+      summary: "User logout"
+      description: "This endpoint logs out a user."
+      parameters:
+        - in: body
+          name: body
+          description: "User data for logout"
+          required: true
+          schema:
+            $ref: '#/definitions/users'
+      responses:
+        "200":
+          description: "User successfully logged out"
+          schema:
+            $ref: '#/definitions/User'
+        "409":
+          description: "User not found"
+
+  /users:
+    get:
+      tags:
+      - users
+      summary: Find All Users
+      responses:
+        200:
+          description: 'OK'
+        500:
+          description: 'Server Error'
+    post:
+      tags:
+      - users
+      summary: Add User
+      parameters:
+      - name: body
+        in: body
+        description: user Data
+        required: true
+        schema:
+          $ref: '#/definitions/users'
+      responses:
+        201:
+          description: 'Created'
+        400:
+          description: 'Bad Request'
+        409:
+          description: 'Conflict'
+        500:
+          description: 'Server Error'
+
+  /users/{id}:
+    get:
+      tags:
+      - users
+      summary: Find User By Id
+      parameters:
+      - name: id
+        in: path
+        description: User Id
+        required: true
+      responses:
+        200:
+          description: 'OK'
+        409:
+          description: 'Conflict'
+        500:
+          description: 'Server Error'
+    put:
+      tags:
+      - users
+      summary: Update User By Id
+      parameters:
+      - name: id
+        in: path
+        description: user Id
+        required: true
+      - name: body
+        in: body
+        description: user Data
+        required: true
+        schema:
+          $ref: '#/definitions/users'
+      responses:
+        200:
+          description: 'OK'
+        400:
+          description: 'Bad Request'
+        409:
+          description: 'Conflict'
+        500:
+          description: 'Server Error'
+    delete:
+      tags:
+      - users
+      summary: Delete User By Id
+      parameters:
+      - name: id
+        in: path
+        description: user Id
+        required: true
+      responses:
+        200:
+          description: 'OK'
+        409:
+          description: 'Conflict'
+        500:
+          description: 'Server Error'
+
+definitions:
+  users:
+    type: object
+    required:
+        - email
+        - password
+    properties:
+      email:
+        type: string
+        description: user Email
+      password:
+        type: string
+        description: user Password
+
+  User:
+    type: object
+    properties:
+      _id:
+        type: string
+      email:
+        type: string
+      password:
+        type: string
+      # Include additional properties your User model might have
+
+schemes:
+ - https
+ - http
