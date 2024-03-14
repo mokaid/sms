@@ -1,7 +1,7 @@
 import { DataStoredInToken, TokenData } from '@interfaces/auth.interface';
 import { compare, hash } from 'bcrypt';
 
-import { HttpException } from '@/exceptions/httpException';
+import { HttpException } from '@/exceptions/HttpException';
 import { SECRET_KEY } from '@config';
 import { Service } from 'typedi';
 import { User } from '@interfaces/users.interface';
