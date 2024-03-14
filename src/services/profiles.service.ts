@@ -3,7 +3,6 @@ import { Profile } from '@/interfaces/profiles.interface';
 import { ProfileDto } from '@/dtos/profiles.dto';
 import { ProfileModel } from '@/models/profiles.model';
 import { Service } from 'typedi';
-import mongoose from 'mongoose';
 
 @Service()
 export class ProfileService {
@@ -16,9 +15,20 @@ export class ProfileService {
     return createProfileData;
   }
 
-  public async findAllProfile(): Promise<Profile[]> {
-    const profiles: Profile[] = await ProfileModel.find();
-    return profiles;
+  public async findAllProfile(page: number, limit: number, orderBy: string, sort: string): Promise<{ profiles: Profile[]; totalProfiles: number }> {
+    const skip = (page - 1) * limit;
+    const sortDirection = sort === 'asc' ? 1 : -1;
+
+    const profilesPromise = ProfileModel.find()
+      .skip(skip)
+      .limit(limit)
+      .sort({ [orderBy]: sortDirection });
+
+    const countPromise = ProfileModel.countDocuments();
+
+    const [profiles, totalProfiles] = await Promise.all([profilesPromise, countPromise]);
+
+    return { profiles, totalProfiles };
   }
 
   public async findProfileById(profileId: string): Promise<Profile> {

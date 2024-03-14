@@ -19,11 +19,16 @@ export class ProfleController {
     }
   };
 
-  public getProifle = async (req: Request, res: Response, next: NextFunction) => {
+  public getProfile = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const findAllProfilesData: Profile[] = await this.profile.findAllProfile();
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const orderBy = (req.query.orderBy as string) || 'createdAt';
+      const sort = (req.query.sort as string) || 'asc';
 
-      res.status(200).json({ data: findAllProfilesData, message: 'findAll' });
+      const { profiles, totalProfiles } = await this.profile.findAllProfile(page, limit, orderBy, sort);
+
+      res.status(200).json({ data: profiles, total: totalProfiles, page, limit, message: 'findAll' });
     } catch (error) {
       next(error);
     }
