@@ -24,6 +24,11 @@ events.forEach(eventName => {
     console.log('event ' + eventName + ' was called with args : ' + args.join(','));
     process.exit(1);
   });
+
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    // Application specific logging, throwing an error, or other logic here
+  });
 });
 
 class App {

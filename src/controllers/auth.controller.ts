@@ -9,7 +9,6 @@ export class AuthController {
   public auth = Container.get(AuthService);
 
   public signUp = async (req: Request, res: Response, next: NextFunction) => {
-    console.log('addddddddddddddddddda');
     try {
       const userData: User = req.body;
       const signUpUserData: User = await this.auth.signup(userData);

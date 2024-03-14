@@ -192,6 +192,30 @@ paths:
         500:
           description: 'Server Error'
 
+
+  /profiles:   
+      post:
+        tags:
+          - Account Profiles
+        summary: Add Account Profile
+        parameters:
+          - name: body
+            in: body
+            description: Account Profile Data
+            required: true
+            schema:
+              $ref: '#/definitions/AccountProfile'
+        responses:
+          201:
+            description: 'Created'
+          400:
+            description: 'Bad Request'
+          409:
+            description: 'Conflict'
+          500:
+            description: 'Server Error'
+
+
 definitions:
   users:
     type: object
@@ -216,6 +240,91 @@ definitions:
       password:
         type: string
       # Include additional properties your User model might have
+
+  AccountProfile:  # New definition for AccountProfile (complete)
+    type: object
+    properties:
+      profileDetails:
+        type: object
+        properties:
+          legalName:
+            type: string
+            description: Client's legal name
+          accountingReference:
+            type: string
+            description: Client's registration number
+          address:
+            type: string
+            description: Client's address
+          alertEmail:
+            type: string
+            description: Email for technical issues
+          accountManager:
+            type: string
+            description: Account Manager from your side
+          accountManagerEmail:
+            type: string
+            description: Account Manager email from client side
+          ratingEmails:
+            type: array
+            items:
+              type: string
+            description: Emails for price rate sheet
+          billingEmails:
+            type: array
+            items:
+              type: string
+            description: Emails for invoices
+          supportEmail:
+            type: string
+            description: Email for client technical support
+          dailyReportEmails:
+            type: array
+            items:
+              type: string
+            description: Emails for daily traffic reports
+          classificationLevel:
+            type: string
+            description: Client classification level (A-B-C)
+          phoneNumber:
+            type: string
+            description: Client's phone number
+          timeZone:
+            type: string
+            description: Client's time zone
+          applyTimeZoneToInvoice:
+            type: boolean
+            description: Apply time zone to invoice
+          applyTimeZoneToDailyReport:
+            type: boolean
+            description: Apply time zone to daily report
+          applyTimeZoneToRateNotification:
+            type: boolean
+            description: Apply time zone to rate notification
+          currency:
+            type: string
+            enum:  # Assuming your Currency enum is defined elsewhere
+              - EUR
+              - USD
+            description: Client's currency
+          country:
+            type: string
+            description: Client's country
+          website: 
+            type: string
+            description: Client's website URL
+          logo: 
+            type: string
+            description: URL or path to client's logo
+          vatRegistrationNumber: 
+            type: string
+            description: Client's VAT registration number 
+
+      MO:
+        type : object
+        properties:
+          credit:
+            type: string
 
 schemes:
  - https
