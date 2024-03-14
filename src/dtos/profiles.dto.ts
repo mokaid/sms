@@ -1,5 +1,20 @@
-import { ClassificationLevel, Currency } from '@/enums/profiles.enums';
-import { IsBoolean, IsEmail, IsEnum, IsInt, IsOptional, IsString, Length, ValidateNested } from 'class-validator';
+import { ClassificationLevel, Currency, InvoiceTemplate, PaymentType } from '@/enums/profiles.enums';
+import {
+  IsBoolean,
+  IsDate,
+  IsEmail,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsPhoneNumber,
+  IsPositive,
+  IsString,
+  Length,
+  Matches,
+  Max,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 import { Type } from 'class-transformer';
 
@@ -75,8 +90,106 @@ class ProfileDetailsDto {
 }
 
 class MODto {
+  @IsNumber()
+  credit: number; // Assuming 'credit' should be a number, not a string
+
+  @IsNumber()
+  creditLimit: number;
+
+  @IsNumber()
+  @IsOptional()
+  alertFlexAmount?: number;
+
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  alertPercentage1?: number;
+
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  alertPercentage2?: number;
+
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  alertPercentage3?: number;
+
+  @IsBoolean()
+  creditLimitActive: boolean;
+
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  tax: number;
+}
+
+class MTDto {
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  mtCredit = 0;
+
+  @IsNumber()
+  @IsPositive()
+  mtCreditLimit: number;
+
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  mtAlertPercentage1?: number;
+
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  mtAlertPercentage2?: number;
+
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  mtAlertPercentage3?: number;
+
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  tax = 0;
+}
+
+class InvoiceDto {
   @IsString()
-  credit: string;
+  billingTerm = 'monthly';
+
+  @IsEnum(PaymentType)
+  paymentType: PaymentType;
+
+  @IsEnum(InvoiceTemplate)
+  invoiceTemplate: InvoiceTemplate;
+}
+
+class BankDto {
+  @IsString()
+  bankName: string;
+
+  @IsString()
+  bankAddress: string;
+
+  @IsString()
+  IBAN: string;
+
+  @IsString()
+  swiftCode: string;
+
+  @IsOptional()
+  phoneNumber?: string;
+
+  @IsString()
+  accountNumber: string;
 }
 
 export class ProfileDto {
@@ -87,4 +200,16 @@ export class ProfileDto {
   @ValidateNested()
   @Type(() => MODto)
   MO: MODto;
+
+  @ValidateNested()
+  @Type(() => MTDto)
+  MT: MTDto;
+
+  @ValidateNested()
+  @Type(() => InvoiceDto)
+  Invoice: InvoiceDto;
+
+  @ValidateNested()
+  @Type(() => BankDto)
+  Bank: BankDto;
 }

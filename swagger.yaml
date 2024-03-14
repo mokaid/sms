@@ -324,7 +324,97 @@ definitions:
         type : object
         properties:
           credit:
+            type: number
+            description: The fixed credit limit for the client, stored as a positive value but interpreted as negative.
+          creditLimit:
+            type: number
+            default: -1000
+            description: The credit limit set for the client, represented as a negative number.
+          alertFlexAmount:
+            type: number
+            description: The extra credit amount allowed once the credit limit is reached.
+          alertPercentage1:
+            type: number
+            description: The first threshold percentage of the credit limit that triggers an alert.
+          alertPercentage2:
+            type: number
+            description: The second threshold percentage of the credit limit that triggers an alert.
+          alertPercentage3:
+            type: number
+            description: The third threshold percentage of the credit limit that triggers an alert.
+          creditLimitActive:
+            type: boolean
+            default: false
+            description: Indicates if the credit limit is actively enforced, automatically disabling/enabling profiles/accounts.
+          tax:
+            type: number
+            default: 0
+            description: The tax percentage applied to invoices sent to the client.            
+
+      MT:
+        type: object
+        properties:
+          mtCredit:
+            type: number
+            default: 0
+            description: The initial credit for the client, increases with traffic sent to this client as a Vendor (MT).
+          mtCreditLimit:
+            type: number
+            description: Fixed credit limit set for the client as Vendor (MT), should be a positive number.
+          mtAlertPercentage1:
+            type: number
+            description: Percentage of the credit limit at which the first alert is triggered.
+          mtAlertPercentage2:
+            type: number
+            description: Percentage of the credit limit at which the second alert is triggered.
+          mtAlertPercentage3:
+            type: number
+            description: Percentage of the credit limit at which the third alert is triggered.
+          tax:
+            type: number
+            default: 0
+            description: Tax percentage, default is 0.
+
+      Invoice:
+        type: object
+        properties:
+          paymentTerm:
             type: string
+            description: Time to wait to accept payment from the client.
+          billingTerm:
+            type: string
+            default: "monthly"
+            description: Frequency at which invoices will be generated, default is monthly.
+          paymentType:
+            type: string
+            enum: [ "Prepaid", "Postpaid" ]
+            description: Type of payment, whether it's Prepaid or Postpaid.
+          invoiceTemplate:
+            type: string
+            enum: [ "EuroWithoutVAT", "EuroWithVAT", "USDWithoutVAT", "USDWithVAT", "Default" ]
+            description: Template used for invoicing, options include templates for different currencies and tax configurations.
+
+      Bank:
+        type: object
+        properties:
+          bankName:
+            type: string
+            description: Name of the bank.
+          bankAddress:
+            type: string
+            description: Address of the bank.
+          IBAN:
+            type: string
+            description: International Bank Account Number.
+          swiftCode:
+            type: string
+            description: SWIFT code for the bank.
+          phoneNumber:
+            type: string
+            description: Phone number associated with the bank account.
+          accountNumber:
+            type: string
+            description: Bank account number.
 
 schemes:
  - https
