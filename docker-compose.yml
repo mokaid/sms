@@ -20,36 +20,14 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DB_HOST: localhost
-      DB_PORT: 27017
-      DB_DATABASE: dev
+      DB_URI: "your_mongodb_atlas_connection_string_here"
     volumes:
       - ./:/app
       - /app/node_modules
     restart: "unless-stopped"
     networks:
       - backend
-    links:
-      - mongo
-    depends_on:
-      - mongo
-
-  mongo:
-    container_name: mongo
-    image: mongo
-    ports:
-      - "27017:27017"
-    environment:
-      DB_HOST: localhost
-      DB_PORT: 27017
-      DB_DATABASE: dev
-    networks:
-      - backend
 
 networks:
   backend:
     driver: bridge
-
-volumes:
-  data:
-    driver: local
