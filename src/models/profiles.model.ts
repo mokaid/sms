@@ -1,4 +1,15 @@
-import { ClassificationLevel, Currency, InvoiceTemplate, PaymentType } from '@/enums/profiles.enums';
+import {
+  AccountCategory,
+  AccountMode,
+  AccountStatus,
+  AccountType,
+  BusinessType,
+  ClassificationLevel,
+  ConnectionMode,
+  Currency,
+  InvoiceTemplate,
+  PaymentType,
+} from '@/enums/profiles.enums';
 import { Severity, getModelForClass, modelOptions, prop } from '@typegoose/typegoose';
 
 class ProfileDetails {
@@ -68,7 +79,7 @@ class ProfileDetails {
 
 class MO {
   @prop({ type: Number, required: true })
-  credit: Number;
+  credit: number;
 
   @prop({ type: Number, default: -1000 })
   creditLimit: number;
@@ -146,10 +157,109 @@ class Bank {
   public accountNumber: string;
 }
 
+class AccountDetails {
+  @prop({ type: String, required: true })
+  public name: string;
+
+  @prop({ type: String, required: true })
+  public accountProfile: string;
+
+  @prop({ type: String, required: true, enum: AccountType })
+  public accountType: AccountType;
+
+  @prop({ type: String, required: true, enum: BusinessType })
+  public businessType: BusinessType;
+
+  @prop({ type: String, required: true, enum: AccountCategory })
+  public accountCategory: AccountCategory;
+
+  @prop({ type: String, required: true, enum: AccountMode })
+  public accountMode: AccountMode;
+
+  @prop({ type: String, required: true, enum: AccountStatus })
+  public accountStatus: AccountStatus;
+
+  @prop({ type: String, required: true })
+  public timeZone: string;
+
+  @prop({ type: Boolean, required: true })
+  public applyTimeZoneToInvoice: boolean;
+
+  @prop({ type: Boolean, required: true })
+  public applyTimeZoneToDailyReport: boolean;
+
+  @prop({ type: Boolean, required: true })
+  public applyTimeZoneToRateNotification: boolean;
+
+  @prop({ type: String, required: true, enum: Currency })
+  public currency: Currency;
+}
+
+class ConnectionDetails {
+  @prop({ type: String, required: true })
+  public userName: string;
+
+  @prop({ type: String, required: true })
+  public password: string;
+
+  @prop({ type: String, required: true })
+  public ipAddress: string;
+
+  @prop({ type: Number, required: true })
+  public port: number;
+
+  @prop({ type: Number, required: false, default: 0 })
+  public sourceTon?: number;
+
+  @prop({ type: Number, required: false, default: 0 })
+  public sourceNpi?: number;
+
+  @prop({ type: Number, required: false, default: 0 })
+  public destTon?: number;
+
+  @prop({ type: Number, required: false, default: 0 })
+  public destNpi?: number;
+
+  @prop({ type: Number, required: false, default: 5 })
+  public maximumConnections?: number;
+
+  @prop({ type: Number, required: false, default: 1 })
+  public connectionToOpen?: number;
+
+  @prop({ type: Number, required: false, default: 10 })
+  public windowSize?: number;
+
+  @prop({ type: Number, required: false, default: 60 })
+  public enquireLink?: number;
+
+  @prop({ type: Number, required: false, default: 50 })
+  public submitPerSecond?: number;
+
+  @prop({ type: Number, required: false, default: 20 })
+  public clientSubmitPerSecond?: number;
+
+  @prop({ type: Number, required: false, default: 20 })
+  public queueToSend?: number;
+
+  @prop({ type: String, enum: ConnectionMode, required: false, default: ConnectionMode.Transceiver })
+  public connectionMode?: ConnectionMode;
+
+  @prop({ type: String, required: true, minlength: 3, maxlength: 5 })
+  public translationPrefix: string;
+}
+
+class Account {
+  @prop({ type: AccountDetails, _id: false, required: true })
+  public details: AccountDetails;
+
+  @prop({ type: ConnectionDetails, _id: false, required: true })
+  public connection: ConnectionDetails;
+}
+
 @modelOptions({ options: { allowMixed: Severity.ALLOW }, schemaOptions: { collection: 'profiles', timestamps: true } })
 class Profile {
   @prop({ type: ProfileDetails, _id: false, required: true })
-  public profileDetails: ProfileDetails;
+  public ProfileDetails: ProfileDetails;
 
   @prop({ type: MO, _id: false, required: true })
   public MO: MO;
@@ -162,6 +272,9 @@ class Profile {
 
   @prop({ type: Bank, _id: false, required: true })
   public Bank: Bank;
+
+  @prop({ type: () => [Account], _id: false, required: true })
+  public Accounts: Account[];
 
   public createdAt?: Date;
   public updatedAt?: Date;

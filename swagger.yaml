@@ -193,7 +193,16 @@ paths:
           description: 'Server Error'
 
 
-  /profiles:   
+  /profiles:
+      get:
+        tags:
+        - Account Profiles
+        summary: Find All Profiles
+        responses:
+          200:
+            description: 'OK'
+          500:
+            description: 'Server Error'     
       post:
         tags:
           - Account Profiles
@@ -214,6 +223,63 @@ paths:
             description: 'Conflict'
           500:
             description: 'Server Error'
+  /profiles/{id}:
+    get:
+      tags:
+       - Account Profiles
+      summary: Find Profile By Id
+      parameters:
+      - name: id
+        in: path
+        description: Profile Id
+        required: true
+      responses:
+        200:
+          description: 'OK'
+        409:
+          description: 'Conflict'
+        500:
+          description: 'Server Error'
+    put:
+      tags:
+      - Account Profiles
+      summary: Update Proifle By Id
+      parameters:
+      - name: id
+        in: path
+        description: profile Id
+        required: true
+      - name: body
+        in: body
+        description: profile Data
+        required: true
+        schema:
+          $ref: '#/definitions/AccountProfile'
+      responses:
+        200:
+          description: 'OK'
+        400:
+          description: 'Bad Request'
+        409:
+          description: 'Conflict'
+        500:
+          description: 'Server Error'          
+    delete:
+      tags:
+      - Account Profiles
+      summary: Delete Profile By Id
+      parameters:
+      - name: id
+        in: path
+        description: profile Id
+        required: true
+      responses:
+        200:
+          description: 'OK'
+        409:
+          description: 'Conflict'
+        500:
+          description: 'Server Error'
 
 
 definitions:
@@ -244,7 +310,7 @@ definitions:
   AccountProfile:  # New definition for AccountProfile (complete)
     type: object
     properties:
-      profileDetails:
+      ProfileDetails:
         type: object
         properties:
           legalName:
@@ -415,6 +481,116 @@ definitions:
           accountNumber:
             type: string
             description: Bank account number.
+
+      Accounts:
+        type: array
+        description: List of accounts associated with the profile
+        items:
+          type: object
+          properties:
+            details:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The name associated with the account
+                accountProfile:
+                  type: string
+                  description: The profile associated with the account
+                accountType:
+                  type: string
+                  enum: [ "Vendor", "Client" ]
+                  description: The type of account
+                businessType:
+                  type: string
+                  enum: [ "Operator", "Hub", "Enterprise", "OTT", "Testing" ]
+                  description: The business type of the account
+                accountCategory:
+                  type: string
+                  enum: [ "Direct", "Wholesale", "HighQuality", "SimBox", "Special", "Test" ]
+                  description: The category of the account
+                accountMode:
+                  type: string
+                  enum: [ "SMPP", "SS7", "Http" ]
+                  description: The mode of account operation
+                accountStatus:
+                  type: string
+                  enum: [ "Active", "Inactive" ]
+                  description: The status of the account
+                timeZone:
+                  type: string
+                  description: Time zone associated with the account
+                applyTimeZoneToInvoice:
+                  type: boolean
+                  description: Whether to apply the account's time zone to invoices
+                applyTimeZoneToDailyReport:
+                  type: boolean
+                  description: Whether to apply the account's time zone to daily reports
+                applyTimeZoneToRateNotification:
+                  type: boolean
+                  description: Whether to apply the account's time zone to rate notifications
+                currency:
+                  type: string
+                  enum: [ "EUR", "USD" ]
+                  description: The currency used by the account
+
+            connection:
+              type: object
+              properties:
+                userName:
+                  type: string
+                  description: Username for the connection
+                password:
+                  type: string
+                  description: Password for the connection
+                ipAddress:
+                  type: string
+                  description: IP address for the connection
+                port:
+                  type: number
+                  description: Port number for the connection
+                sourceTon:
+                  type: number
+                  description: Source TON (Type of Number) for the connection
+                sourceNpi:
+                  type: number
+                  description: Source NPI (Numbering Plan Indicator) for the connection
+                destTon:
+                  type: number
+                  description: Destination TON (Type of Number) for the connection
+                destNpi:
+                  type: number
+                  description: Destination NPI (Numbering Plan Indicator) for the connection
+                maximumConnections:
+                  type: number
+                  description: Maximum number of concurrent connections allowed
+                connectionToOpen:
+                  type: number
+                  description: Number of connections to open initially
+                windowSize:
+                  type: number
+                  description: The window size for the connection
+                enquireLink:
+                  type: number
+                  description: Interval for sending enquire link messages
+                submitPerSecond:
+                  type: number
+                  description: Maximum number of messages allowed to submit per second
+                clientSubmitPerSecond:
+                  type: number
+                  description: Maximum number of messages the client is allowed to submit per second
+                queueToSend:
+                  type: number
+                  description: Queue size for messages waiting to be sent
+                connectionMode:
+                  type: string
+                  enum: [ "Transceiver", "Receiver", "Transmitter" ]
+                  description: The mode of the connection
+                translationPrefix:
+                  type: string
+                  description: Prefix used for number translation
+
+
 
 schemes:
  - https

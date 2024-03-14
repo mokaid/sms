@@ -1,7 +1,19 @@
-import { ClassificationLevel, Currency, InvoiceTemplate, PaymentType } from '@/enums/profiles.enums';
+import {
+  AccountCategory,
+  AccountMode,
+  AccountStatus,
+  AccountType,
+  BusinessType,
+  ClassificationLevel,
+  ConnectionMode,
+  Currency,
+  InvoiceTemplate,
+  PaymentType,
+} from '@/enums/profiles.enums';
 
 export interface Profile {
-  profileDetails: {
+  _id?: string;
+  ProfileDetails: {
     legalName: string;
     accountingReference: string;
     address: string;
@@ -56,4 +68,39 @@ export interface Profile {
     phoneNumber?: string;
     accountNumber: string;
   };
+  Accounts: Array<{
+    details: {
+      name: string;
+      accountProfile: string;
+      accountType: AccountType;
+      businessType: BusinessType;
+      accountCategory: AccountCategory;
+      accountMode: AccountMode;
+      accountStatus: AccountStatus;
+      timeZone: string;
+      applyTimeZoneToInvoice: boolean;
+      applyTimeZoneToDailyReport: boolean;
+      applyTimeZoneToRateNotification: boolean;
+      currency: Currency;
+    };
+    connection: {
+      userName: string;
+      password: string;
+      ipAddress: string;
+      port: number;
+      sourceTon?: number;
+      sourceNpi?: number;
+      destTon?: number;
+      destNpi?: number;
+      maximumConnections?: number;
+      connectionToOpen?: number;
+      windowSize?: number;
+      enquireLink?: number;
+      submitPerSecond?: number;
+      clientSubmitPerSecond?: number;
+      queueToSend?: number;
+      connectionMode?: ConnectionMode;
+      translationPrefix: string;
+    };
+  }>;
 }

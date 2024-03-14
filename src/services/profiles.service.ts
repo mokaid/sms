@@ -3,15 +3,49 @@ import { Profile } from '@/interfaces/profiles.interface';
 import { ProfileDto } from '@/dtos/profiles.dto';
 import { ProfileModel } from '@/models/profiles.model';
 import { Service } from 'typedi';
+import mongoose from 'mongoose';
 
 @Service()
 export class ProfileService {
   public async createProfile(profileData: ProfileDto): Promise<Profile> {
-    const findProfile: Profile = await ProfileModel.findOne({ 'profileDetails.accountingReference': profileData.profileDetails.accountingReference });
+    const findProfile: Profile = await ProfileModel.findOne({ 'ProfileDetails.accountingReference': profileData.ProfileDetails.accountingReference });
     if (findProfile) throw new HttpException(409, `This profile already exists`);
 
     const createProfileData: Profile = await ProfileModel.create({ ...profileData });
 
     return createProfileData;
+  }
+
+  public async findAllProfile(): Promise<Profile[]> {
+    const profiles: Profile[] = await ProfileModel.find();
+    return profiles;
+  }
+
+  public async findProfileById(profileId: string): Promise<Profile> {
+    const findProfiler: Profile = await ProfileModel.findOne({ _id: profileId });
+    if (!findProfiler) throw new HttpException(409, "Profile doesn't exist");
+
+    return findProfiler;
+  }
+
+  public async updateProfile(profileId: string, profileData: ProfileDto): Promise<Profile> {
+    if (profileData.ProfileDetails.accountingReference) {
+      const findProfile: Profile = await ProfileModel.findOne({
+        'ProfileDetails.accountingReference': profileData.ProfileDetails.accountingReference,
+      });
+      if (findProfile && findProfile._id != profileId) throw new HttpException(409, `This profile already exists`);
+    }
+
+    const updateProfileById: Profile = await ProfileModel.findByIdAndUpdate(profileId, { ...profileData }, { new: true });
+    if (!updateProfileById) throw new HttpException(409, "Profile doesn't exist");
+
+    return updateProfileById;
+  }
+
+  public async deleteProfile(profileId: string): Promise<Profile> {
+    const deleteProfileById: Profile = await ProfileModel.findByIdAndDelete(profileId);
+    if (!deleteProfileById) throw new HttpException(409, "User doesn't exist");
+
+    return deleteProfileById;
   }
 }

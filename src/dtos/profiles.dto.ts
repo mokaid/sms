@@ -1,20 +1,16 @@
-import { ClassificationLevel, Currency, InvoiceTemplate, PaymentType } from '@/enums/profiles.enums';
 import {
-  IsBoolean,
-  IsDate,
-  IsEmail,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsPhoneNumber,
-  IsPositive,
-  IsString,
-  Length,
-  Matches,
-  Max,
-  Min,
-  ValidateNested,
-} from 'class-validator';
+  AccountCategory,
+  AccountMode,
+  AccountStatus,
+  AccountType,
+  BusinessType,
+  ClassificationLevel,
+  ConnectionMode,
+  Currency,
+  InvoiceTemplate,
+  PaymentType,
+} from '@/enums/profiles.enums';
+import { IsBoolean, IsEmail, IsEnum, IsNumber, IsOptional, IsPositive, IsString, Length, Max, Min, ValidateNested } from 'class-validator';
 
 import { Type } from 'class-transformer';
 
@@ -91,7 +87,7 @@ class ProfileDetailsDto {
 
 class MODto {
   @IsNumber()
-  credit: number; // Assuming 'credit' should be a number, not a string
+  credit: number;
 
   @IsNumber()
   creditLimit: number;
@@ -192,10 +188,124 @@ class BankDto {
   accountNumber: string;
 }
 
+class AccountDetailsDto {
+  @IsString()
+  name: string;
+
+  @IsString()
+  accountProfile: string;
+
+  @IsEnum(AccountType)
+  accountType: AccountType;
+
+  @IsEnum(BusinessType)
+  businessType: BusinessType;
+
+  @IsEnum(AccountCategory)
+  accountCategory: AccountCategory;
+
+  @IsEnum(AccountMode)
+  accountMode: AccountMode;
+
+  @IsEnum(AccountStatus)
+  accountStatus: AccountStatus;
+
+  @IsString()
+  timeZone: string;
+
+  @IsBoolean()
+  applyTimeZoneToInvoice: boolean;
+
+  @IsBoolean()
+  applyTimeZoneToDailyReport: boolean;
+
+  @IsBoolean()
+  applyTimeZoneToRateNotification: boolean;
+
+  @IsEnum(Currency)
+  currency: Currency;
+}
+
+class ConnectionDetailsDto {
+  @IsString()
+  userName: string;
+
+  @IsString()
+  password: string;
+
+  @IsString()
+  ipAddress: string;
+
+  @IsNumber()
+  port: number;
+
+  @IsNumber()
+  @IsOptional()
+  sourceTon? = 0;
+
+  @IsNumber()
+  @IsOptional()
+  sourceNpi? = 0;
+
+  @IsNumber()
+  @IsOptional()
+  destTon? = 0;
+
+  @IsNumber()
+  @IsOptional()
+  destNpi? = 0;
+
+  @IsNumber()
+  @IsOptional()
+  maximumConnections? = 5;
+
+  @IsNumber()
+  @IsOptional()
+  connectionToOpen? = 1;
+
+  @IsNumber()
+  @IsOptional()
+  windowSize? = 10;
+
+  @IsNumber()
+  @IsOptional()
+  enquireLink? = 60;
+
+  @IsNumber()
+  @IsOptional()
+  submitPerSecond? = 50;
+
+  @IsNumber()
+  @IsOptional()
+  clientSubmitPerSecond? = 20;
+
+  @IsNumber()
+  @IsOptional()
+  queueToSend? = 20;
+
+  @IsEnum(ConnectionMode)
+  @IsOptional()
+  connectionMode?: ConnectionMode = ConnectionMode.Transceiver;
+
+  @IsString()
+  @Length(3, 5)
+  translationPrefix: string;
+}
+
+class AccountDto {
+  @ValidateNested()
+  @Type(() => AccountDetailsDto)
+  details: AccountDetailsDto;
+
+  @ValidateNested()
+  @Type(() => ConnectionDetailsDto)
+  connection: ConnectionDetailsDto;
+}
+
 export class ProfileDto {
   @ValidateNested()
   @Type(() => ProfileDetailsDto)
-  profileDetails: ProfileDetailsDto;
+  ProfileDetails: ProfileDetailsDto;
 
   @ValidateNested()
   @Type(() => MODto)
@@ -212,4 +322,8 @@ export class ProfileDto {
   @ValidateNested()
   @Type(() => BankDto)
   Bank: BankDto;
+
+  @ValidateNested({ each: true })
+  @Type(() => AccountDto)
+  Accounts: AccountDto[];
 }
