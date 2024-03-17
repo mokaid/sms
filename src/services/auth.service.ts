@@ -10,7 +10,7 @@ import { sign } from 'jsonwebtoken';
 
 const createToken = (user: User): TokenData => {
   const dataStoredInToken: DataStoredInToken = { _id: user._id };
-  const expiresIn: number = 60 * 60;
+  const expiresIn: number = 600 * 60;
 
   return { expiresIn, token: sign(dataStoredInToken, SECRET_KEY, { expiresIn }) };
 };
@@ -45,7 +45,7 @@ export class AuthService {
   }
 
   public async logout(userData: User): Promise<User> {
-    const findUser: User = await UserModel.findOne({ email: userData.email, password: userData.password });
+    const findUser: User = await UserModel.findOne({ email: userData.email });
     if (!findUser) throw new HttpException(409, `This email ${userData.email} was not found`);
 
     return findUser;
