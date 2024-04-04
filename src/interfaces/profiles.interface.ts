@@ -102,5 +102,11 @@ export interface Profile {
       connectionMode?: ConnectionMode;
       translationPrefix: string;
     };
+    emailCoverageList?: {
+      email: string;
+      fileFormat: string;
+      partialFileName: string;
+      deleteAllExisting: boolean;
+    };
   }>;
 }
