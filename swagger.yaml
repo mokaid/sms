@@ -627,6 +627,23 @@ definitions:
                   type: string
                   description: Prefix used for number translation
 
+            emailCoverageList:
+              type: object
+              description: Email coverage list details, required for vendors
+              properties:
+                email:
+                  type: string
+                  description: Email address for receiving coverage reports
+                fileFormat:
+                  type: string
+                  enum: [ "CSV", "XLS", "XLSX" ]
+                  description: File format of the coverage reports
+                partialFileName:
+                  type: string
+                  description: Partial file name for identifying the coverage reports
+                deleteAllExisting:
+                  type: boolean
+                  description: Whether to delete all existing reports before adding new ones
 
 
 schemes:

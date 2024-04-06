@@ -7,10 +7,11 @@ import {
   ClassificationLevel,
   ConnectionMode,
   Currency,
+  FileFormat,
   InvoiceTemplate,
   PaymentType,
 } from '@/enums/profiles.enums';
-import { IsBoolean, IsEmail, IsEnum, IsNumber, IsOptional, IsPositive, IsString, Length, Max, Min, ValidateNested } from 'class-validator';
+import { IsBoolean, IsEmail, IsEnum, IsNumber, IsOptional, IsPositive, IsString, Length, Max, Min, ValidateNested, isBoolean } from 'class-validator';
 
 import { Type } from 'class-transformer';
 
@@ -292,6 +293,20 @@ class ConnectionDetailsDto {
   translationPrefix: string;
 }
 
+class EmailCoveragelistDetailsDto {
+  @IsEmail()
+  email: string;
+
+  @IsEnum(FileFormat)
+  fileFormat: FileFormat;
+
+  @IsString()
+  partialFileName: string;
+
+  @IsBoolean()
+  deleteAllExisting: boolean;
+}
+
 class AccountDto {
   @ValidateNested()
   @Type(() => AccountDetailsDto)
@@ -300,6 +315,10 @@ class AccountDto {
   @ValidateNested()
   @Type(() => ConnectionDetailsDto)
   connection: ConnectionDetailsDto;
+
+  @ValidateNested()
+  @Type(() => EmailCoveragelistDetailsDto)
+  emailCoverageList?: EmailCoveragelistDetailsDto;
 }
 
 export class ProfileDto {

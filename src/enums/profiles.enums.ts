@@ -60,3 +60,9 @@ export enum ConnectionMode {
   Receiver = 'Receiver',
   Transmitter = 'Transmitter',
 }
+
+export enum FileFormat {
+  CSV = 'CSV',
+  XLS = 'XLS',
+  XLSX = 'XLSX',
+}

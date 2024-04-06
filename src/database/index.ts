@@ -7,7 +7,7 @@ export const dbConnection = async () => {
   };
 
   if (NODE_ENV !== 'production') {
-    set('debug', true);
+    set('debug', false);
   }
 
   await connect(dbConfig.url);

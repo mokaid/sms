@@ -7,6 +7,7 @@ import {
   ClassificationLevel,
   ConnectionMode,
   Currency,
+  FileFormat,
   InvoiceTemplate,
   PaymentType,
 } from '@/enums/profiles.enums';
@@ -104,7 +105,7 @@ export interface Profile {
     };
     emailCoverageList?: {
       email: string;
-      fileFormat: string;
+      fileFormat: FileFormat;
       partialFileName: string;
       deleteAllExisting: boolean;
     };

@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 
 import { Container } from 'typedi';
+import { HttpException } from '@/exceptions/HttpException';
 import { Profile } from '@/interfaces/profiles.interface';
 import { ProfileService } from '@/services/profiles.service';
 

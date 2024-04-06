@@ -7,10 +7,11 @@ import {
   ClassificationLevel,
   ConnectionMode,
   Currency,
+  FileFormat,
   InvoiceTemplate,
   PaymentType,
 } from '@/enums/profiles.enums';
-import { Severity, getModelForClass, modelOptions, prop } from '@typegoose/typegoose';
+import { Severity, getModelForClass, modelOptions, pre, prop } from '@typegoose/typegoose';
 
 class ProfileDetails {
   @prop({ type: String, required: true, maxlength: 255 })
@@ -248,12 +249,28 @@ class ConnectionDetails {
   public translationPrefix: string;
 }
 
+class EmailCoveragelistDetails {
+  @prop({ type: String, required: true })
+  public email: string;
+
+  @prop({ type: String, required: true, enum: FileFormat })
+  public fileFormat: FileFormat;
+
+  @prop({ type: String, required: true })
+  public partialFileName: AccountType;
+
+  @prop({ type: Boolean, default: false })
+  deleteAllExisting: boolean;
+}
 class Account {
   @prop({ type: AccountDetails, _id: false, required: true })
   public details: AccountDetails;
 
   @prop({ type: ConnectionDetails, _id: false, required: true })
   public connection: ConnectionDetails;
+
+  @prop({ type: EmailCoveragelistDetails, _id: false, required: false })
+  public emailCoverageList?: EmailCoveragelistDetails;
 }
 
 @modelOptions({ options: { allowMixed: Severity.ALLOW }, schemaOptions: { collection: 'profiles', timestamps: true } })

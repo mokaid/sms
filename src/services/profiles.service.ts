@@ -10,6 +10,13 @@ export class ProfileService {
     const findProfile: Profile = await ProfileModel.findOne({ 'ProfileDetails.accountingReference': profileData.ProfileDetails.accountingReference });
     if (findProfile) throw new HttpException(409, `This profile already exists`);
 
+    profileData.Accounts.forEach(account => {
+      console.log(account.details.accountType, account.emailCoverageList);
+      if (account.details.accountType === 'Vendor' && !account.emailCoverageList) {
+        throw new HttpException(400, 'Vendors must have an email coverage list.');
+      }
+    });
+
     const createProfileData: Profile = await ProfileModel.create({ ...profileData });
 
     return createProfileData;
@@ -38,6 +45,13 @@ export class ProfileService {
     return findProfiler;
   }
 
+  public async findProfileByAccountEmail(accountEmail: string): Promise<Profile> {
+    const findProfiler: Profile = await ProfileModel.findOne({ 'Accounts.emailCoveragelist.email': accountEmail });
+    if (!findProfiler) throw new HttpException(409, "Profile doesn't exist");
+
+    return findProfiler;
+  }
+
   public async updateProfile(profileId: string, profileData: ProfileDto): Promise<Profile> {
     if (profileData.ProfileDetails.accountingReference) {
       const findProfile: Profile = await ProfileModel.findOne({
@@ -45,6 +59,12 @@ export class ProfileService {
       });
       if (findProfile && findProfile._id != profileId) throw new HttpException(409, `This profile already exists`);
     }
+
+    profileData.Accounts.forEach(account => {
+      if (account.details.accountType === 'Vendor' && !account.emailCoverageList) {
+        throw new HttpException(400, 'Vendors must have an email coverage list.');
+      }
+    });
 
     const updateProfileById: Profile = await ProfileModel.findByIdAndUpdate(profileId, { ...profileData }, { new: true });
     if (!updateProfileById) throw new HttpException(409, "Profile doesn't exist");

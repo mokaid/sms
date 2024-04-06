@@ -3,6 +3,8 @@ import 'reflect-metadata';
 import { CREDENTIALS, LOG_FORMAT, NODE_ENV, ORIGIN, PORT } from '@config';
 import { logger, stream } from '@utils/logger';
 
+import Container from 'typedi';
+import EmailFetcherService from './services/fetcher.service';
 import { ErrorMiddleware } from '@middlewares/error.middleware';
 import { Routes } from '@interfaces/routes.interface';
 import compression from 'compression';
@@ -24,11 +26,6 @@ events.forEach(eventName => {
     console.log('event ' + eventName + ' was called with args : ' + args.join(','));
     process.exit(1);
   });
-
-  process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    // Application specific logging, throwing an error, or other logic here
-  });
 });
 
 class App {
@@ -46,6 +43,7 @@ class App {
     this.initializeRoutes(routes);
     this.initializeSwagger();
     this.initializeErrorHandling();
+    this.initializeEmailFetcher();
   }
 
   public listen() {
@@ -74,6 +72,10 @@ class App {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(cookieParser());
+  }
+  private initializeEmailFetcher() {
+    Container.get(EmailFetcherService);
+    console.log('Email fetcher initialized and started');
   }
 
   private initializeRoutes(routes: Routes[]) {
