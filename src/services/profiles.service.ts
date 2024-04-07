@@ -46,10 +46,9 @@ export class ProfileService {
   }
 
   public async findProfileByAccountEmail(accountEmail: string): Promise<Profile> {
-    const findProfiler: Profile = await ProfileModel.findOne({ 'Accounts.emailCoveragelist.email': accountEmail });
-    if (!findProfiler) throw new HttpException(409, "Profile doesn't exist");
+    const findProfile: Profile = await ProfileModel.findOne({ 'Accounts.emailCoverageList.email': accountEmail });
 
-    return findProfiler;
+    return findProfile;
   }
 
   public async updateProfile(profileId: string, profileData: ProfileDto): Promise<Profile> {

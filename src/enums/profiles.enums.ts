@@ -62,7 +62,7 @@ export enum ConnectionMode {
 }
 
 export enum FileFormat {
-  CSV = 'CSV',
-  XLS = 'XLS',
-  XLSX = 'XLSX',
+  CSV = 'text/csv',
+  XLS = 'application/vnd.ms-excel',
+  XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 }
