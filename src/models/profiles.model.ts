@@ -262,6 +262,30 @@ class EmailCoveragelistDetails {
   @prop({ type: Boolean, default: false })
   deleteAllExisting: boolean;
 }
+
+class PriceListItem {
+  @prop({ required: true })
+  public customId: string;
+
+  @prop({ required: true })
+  public country: string;
+
+  @prop({ required: false })
+  public MCC: string;
+
+  @prop({ required: false })
+  public MNC: string;
+
+  @prop({ required: false })
+  public oldPrice: string;
+
+  @prop({ required: true })
+  public price: string;
+
+  @prop({ type: String, required: false, enum: Currency, default: Currency.EUR })
+  public currency: Currency;
+}
+
 class Account {
   @prop({ type: AccountDetails, _id: false, required: true })
   public details: AccountDetails;
@@ -271,6 +295,9 @@ class Account {
 
   @prop({ type: EmailCoveragelistDetails, _id: false, required: false })
   public emailCoverageList?: EmailCoveragelistDetails;
+
+  @prop({ type: () => [PriceListItem], _id: false, required: false })
+  public priceList: PriceListItem[];
 }
 
 @modelOptions({ options: { allowMixed: Severity.ALLOW }, schemaOptions: { collection: 'profiles', timestamps: true } })
@@ -290,7 +317,7 @@ class Profile {
   @prop({ type: Bank, _id: false, required: true })
   public Bank: Bank;
 
-  @prop({ type: () => [Account], _id: false, required: true })
+  @prop({ type: () => [Account], _id: true, required: true })
   public Accounts: Account[];
 
   public createdAt?: Date;
