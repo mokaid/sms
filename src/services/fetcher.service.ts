@@ -1,45 +1,25 @@
+import { ParsedItem, SchemaConfig } from '@/interfaces/email.interface';
+
 import Container from 'typedi';
+import EmailService from './email.service';
 import { FileFormat } from '@/enums/profiles.enums';
 import { ObjectId } from 'mongoose';
 import { ProfileModel } from '@/models/profiles.model';
 import { ProfileService } from './profiles.service';
+import { imapConfig } from '@/config/email';
 import { simpleParser } from 'mailparser';
+
 const xlsx = require('xlsx');
 const Imap = require('imap');
 const { Service } = require('typedi');
-
-interface SchemaFieldConfig {
-  [fieldName: string]: string[];
-}
-
-interface SchemaConfig {
-  headerRow: number;
-  fields: SchemaFieldConfig;
-}
-
-interface ParsedItem {
-  country: string;
-  MCC: string;
-  MNC: string;
-  price: string;
-  currency: string;
-}
 
 @Service()
 class EmailFetcherService {
   private imap;
   public profile = Container.get(ProfileService);
+  private emailService: EmailService;
 
   constructor() {
-    const imapConfig = {
-      user: 'mokaid83@gmail.com',
-      password: 'wmhi fdxy xioc usky',
-      host: 'imap.gmail.com',
-      port: 993,
-      tls: true,
-      tlsOptions: { rejectUnauthorized: false },
-    };
-
     this.imap = new Imap(imapConfig);
     this.setupListeners();
   }
@@ -73,12 +53,10 @@ class EmailFetcherService {
     const emailText = mail.text?.toLowerCase() || '';
 
     // First, find any account that matches the username in the email's subject or body.
-    // if (mail.subject || mail.text) {
     foundAccount = profile.Accounts.find(account => {
       const username = account.connection.userName.toLowerCase();
       return emailSubject.toLowerCase().includes(username) || emailText.toLowerCase().includes(username);
     });
-    //}
 
     // If an account is found, look for a relevant attachment that includes the account's partialFileName.
     if (foundAccount) {
@@ -121,10 +99,8 @@ class EmailFetcherService {
     }
 
     if (foundAccount && relevantAttachment) {
-      // console.log('Relevant account and attachment found:', foundAccount, relevantAttachment.filename);
       return { account: foundAccount, attachment: relevantAttachment };
     } else {
-      // console.log('No relevant account or attachment found for this email.');
       return null;
     }
   }
@@ -158,8 +134,6 @@ class EmailFetcherService {
                 const result = await this.findRelevantAccountAndAttachment(profile, mail);
 
                 if (result) {
-                  // console.log('Relevant account and attachment found:', result);
-
                   const schemaConfig = {
                     headerRow: 1, // Assuming headers start at the second row
                     fields: {
@@ -181,7 +155,7 @@ class EmailFetcherService {
                     const columnIndexMap: { [key: string]: number } = {};
                     Object.entries(schemaConfig.fields).forEach(([fieldName, possibleHeaders]) => {
                       columnIndexMap[fieldName] = headers.findIndex(
-                        header => (possibleHeaders as string[]).some(possibleHeader => possibleHeader === header), // Use type assertion here
+                        header => possibleHeaders.some(possibleHeader => possibleHeader === header), // Use type assertion here
                       );
                     });
 
@@ -270,7 +244,6 @@ class EmailFetcherService {
                         }
                       });
 
-                      console.log(updatedPriceList);
                       // Assign the updated list back to the account
                       account.Accounts[accountIndex].priceList = updatedPriceList;
                     }
