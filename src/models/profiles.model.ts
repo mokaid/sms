@@ -13,6 +13,20 @@ import {
 } from '@/enums/profiles.enums';
 import { Severity, getModelForClass, modelOptions, pre, prop } from '@typegoose/typegoose';
 
+class FieldConfig {
+  @prop({ required: true })
+  public headerRow: number;
+
+  @prop({ required: true })
+  public fields: {
+    country: string[];
+    MCC: string[];
+    MNC: string[];
+    price: string[];
+    currency: string[];
+  };
+}
+
 class ProfileDetails {
   @prop({ type: String, required: true, maxlength: 255 })
   public legalName: string;
@@ -319,6 +333,9 @@ class Profile {
 
   @prop({ type: () => [Account], _id: true, required: true })
   public Accounts: Account[];
+
+  @prop({ type: () => FieldConfig, _id: false, required: true })
+  public SchemaConfig: FieldConfig;
 
   public createdAt?: Date;
   public updatedAt?: Date;

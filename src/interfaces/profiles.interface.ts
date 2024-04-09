@@ -14,6 +14,16 @@ import {
 
 export interface Profile {
   _id?: string;
+  SchemaConfig: {
+    headerRow: number;
+    fields: {
+      country: string[];
+      MCC: string[];
+      MNC: string[];
+      price: string[];
+      currency: string[];
+    };
+  };
   ProfileDetails: {
     legalName: string;
     accountingReference: string;

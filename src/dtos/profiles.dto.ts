@@ -11,7 +11,22 @@ import {
   InvoiceTemplate,
   PaymentType,
 } from '@/enums/profiles.enums';
-import { IsBoolean, IsEmail, IsEnum, IsNumber, IsOptional, IsPositive, IsString, Length, Max, Min, ValidateNested, isBoolean } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsEmail,
+  IsEnum,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsPositive,
+  IsString,
+  Length,
+  Max,
+  Min,
+  ValidateNested,
+  isBoolean,
+} from 'class-validator';
 
 import { Type } from 'class-transformer';
 
@@ -321,7 +336,43 @@ class AccountDto {
   emailCoverageList?: EmailCoveragelistDetailsDto;
 }
 
+class FieldsDto {
+  @IsArray()
+  @IsString({ each: true })
+  country: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  MCC: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  MNC: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  price: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  currency: string[];
+}
+
+class SchemaConfigDto {
+  @IsNumber()
+  @Min(1)
+  headerRow: number;
+
+  @ValidateNested()
+  @Type(() => FieldsDto)
+  fields: FieldsDto;
+}
+
 export class ProfileDto {
+  @ValidateNested()
+  @Type(() => SchemaConfigDto)
+  SchemaConfig: SchemaConfigDto;
+
   @ValidateNested()
   @Type(() => ProfileDetailsDto)
   ProfileDetails: ProfileDetailsDto;

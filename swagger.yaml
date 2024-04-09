@@ -645,6 +645,52 @@ definitions:
                   type: boolean
                   description: Whether to delete all existing reports before adding new ones
 
+      SchemaConfig:
+        type: object
+        required:
+          - headerRow
+          - fields
+        properties:
+          headerRow:
+            type: integer
+            description: "Assuming headers start at the second row"
+            default: 1
+          fields:
+            type: object
+            required:
+              - country
+              - MCC
+              - MNC
+              - price
+              - currency
+            properties:
+              country:
+                type: array
+                items:
+                  type: string
+                description: "Possible header names for country"
+              MCC:
+                type: array
+                items:
+                  type: string
+                description: "Possible header names for Mobile Country Code"
+              MNC:
+                type: array
+                items:
+                  type: string
+                description: "Possible header names for Mobile Network Code"
+              price:
+                type: array
+                items:
+                  type: string
+                description: "Possible header names for price"
+              currency:
+                type: array
+                items:
+                  type: string
+                default: ["EUR"]
+                description: "Default to 'EUR' if column is absent or value is missing. Possible header names for currency"
+      
 
 schemes:
  - https
