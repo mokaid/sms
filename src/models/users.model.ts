@@ -1,4 +1,4 @@
-import { getModelForClass, modelOptions, prop } from '@typegoose/typegoose';
+import { getModelForClass, modelOptions, post, pre, prop } from '@typegoose/typegoose';
 
 @modelOptions({ schemaOptions: { collection: 'users', timestamps: true } })
 class User {

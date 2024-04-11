@@ -11,8 +11,41 @@ import {
   InvoiceTemplate,
   PaymentType,
 } from '@/enums/profiles.enums';
-import { Severity, getModelForClass, modelOptions, pre, prop } from '@typegoose/typegoose';
+import { Severity, getModelForClass, modelOptions, post, pre, prop } from '@typegoose/typegoose';
 
+// import _ from 'lodash'; // Using Lodash for deep object comparison
+
+// function logChange(operation, doc) {
+//   console.log(`Operation: ${operation}`, doc);
+// }
+// @pre<Profile>('save', function (next) {
+//   if (this.isNew) {
+//     logChange('create', this);
+//   } else {
+//     logChange('update', this);
+//   }
+//   next();
+// })
+// @post<Profile>('remove', function (doc) {
+//   logChange('delete', doc);
+// })
+// @pre<Profile>('findOneAndUpdate', async function () {
+//   // 'this' refers to the query in pre hooks, so you get the document before update
+//   this._original = await this.model.findOneAndUpdate(this.getQuery()).exec();
+// })
+// @post<Profile>('findOneAndUpdate', function (doc) {
+//   // 'doc' is the document after the update
+//   const original = this._original;
+//   const updated = doc.toObject();
+
+//   // Use Lodash's `isEqual` for deep comparison and `pickBy` to filter unchanged properties
+//   const changes = _.pickBy(updated, (value, key) => !_.isEqual(value, original[key]));
+
+//   console.log(original, updated, changes);
+//   if (!_.isEmpty(changes)) {
+//     console.log('Updated fields:', changes);
+//   }
+// })
 class FieldConfig {
   @prop({ required: true })
   public headerRow: number;

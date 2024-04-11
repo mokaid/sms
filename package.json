@@ -30,6 +30,7 @@
     "hpp": "^0.2.3",
     "imap": "^0.8.17",
     "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
     "mailparser": "^3.6.9",
     "mongoose": "^6.3.2",
     "morgan": "^1.10.0",
