@@ -28,7 +28,7 @@ class EmailFetcherService {
   private onImapReady(): void {
     console.log('IMAP Ready');
     this.checkForNewEmails();
-    setInterval(this.checkForNewEmails.bind(this), 30000);
+    setInterval(this.checkForNewEmails.bind(this), 100000);
   }
 
   private onImapError(err: Error): void {
