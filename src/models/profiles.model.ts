@@ -123,6 +123,9 @@ class ProfileDetails {
 
   @prop({ type: String, required: true })
   public vatRegistrationNumber: string;
+
+  @prop({ type: () => [String], required: false })
+  public clientIPAddress: string[];
 }
 
 class MO {
@@ -250,10 +253,10 @@ class ConnectionDetails {
   @prop({ type: String, required: true })
   public password: string;
 
-  @prop({ type: String, required: true })
+  @prop({ type: String, required: false })
   public ipAddress: string;
 
-  @prop({ type: Number, required: true })
+  @prop({ type: Number, required: false })
   public port: number;
 
   @prop({ type: Number, required: false, default: 0 })

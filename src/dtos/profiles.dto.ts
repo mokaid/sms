@@ -9,6 +9,7 @@ import {
   Currency,
   FileFormat,
   InvoiceTemplate,
+  IpVersion,
   PaymentType,
 } from '@/enums/profiles.enums';
 import {
@@ -16,6 +17,7 @@ import {
   IsBoolean,
   IsEmail,
   IsEnum,
+  IsIP,
   IsNumber,
   IsObject,
   IsOptional,
@@ -99,6 +101,10 @@ class ProfileDetailsDto {
 
   @IsString()
   vatRegistrationNumber: string;
+
+  @IsIP(IpVersion.IPv4, { each: true })
+  @IsOptional()
+  clientIPAddresses: string[];
 }
 
 class MODto {
@@ -249,10 +255,12 @@ class ConnectionDetailsDto {
   @IsString()
   password: string;
 
-  @IsString()
+  @IsIP()
+  @IsOptional()
   ipAddress: string;
 
   @IsNumber()
+  @IsOptional()
   port: number;
 
   @IsNumber()

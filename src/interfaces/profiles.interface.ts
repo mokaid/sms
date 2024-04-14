@@ -46,6 +46,7 @@ export interface Profile {
     website: string;
     logo: string;
     vatRegistrationNumber: string;
+    clientIPAddress?: string[];
   };
   MO: {
     credit: number;
@@ -97,8 +98,8 @@ export interface Profile {
     connection: {
       userName: string;
       password: string;
-      ipAddress: string;
-      port: number;
+      ipAddress?: string;
+      port?: number;
       sourceTon?: number;
       sourceNpi?: number;
       destTon?: number;

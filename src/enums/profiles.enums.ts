@@ -66,3 +66,8 @@ export enum FileFormat {
   XLS = 'application/vnd.ms-excel',
   XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 }
+
+export enum IpVersion {
+  IPv4 = 4,
+  IPv6 = 6,
+}

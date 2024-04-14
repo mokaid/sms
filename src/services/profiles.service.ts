@@ -18,9 +18,16 @@ export class ProfileService {
     if (findProfile) throw new HttpException(409, `This profile already exists`);
 
     profileData.Accounts.forEach(account => {
-      console.log(account.details.accountType, account.emailCoverageList);
-      if (account.details.accountType === 'Vendor' && !account.emailCoverageList) {
-        throw new HttpException(400, 'Vendors must have an email coverage list.');
+      if (account.details.accountType === 'Vendor') {
+        if (!account.emailCoverageList) {
+          throw new HttpException(400, 'Vendors must have an email coverage list.');
+        }
+        if (!account.connection.ipAddress) {
+          throw new HttpException(400, 'Vendors must have an IP address.');
+        }
+        if (account.connection.port === undefined || account.connection.port === null) {
+          throw new HttpException(400, 'Vendors must have a port.');
+        }
       }
     });
 
@@ -67,8 +74,16 @@ export class ProfileService {
     }
 
     profileData.Accounts.forEach(account => {
-      if (account.details.accountType === 'Vendor' && !account.emailCoverageList) {
-        throw new HttpException(400, 'Vendors must have an email coverage list.');
+      if (account.details.accountType === 'Vendor') {
+        if (!account.emailCoverageList) {
+          throw new HttpException(400, 'Vendors must have an email coverage list.');
+        }
+        if (!account.connection.ipAddress) {
+          throw new HttpException(400, 'Vendors must have an IP address.');
+        }
+        if (account.connection.port === undefined || account.connection.port === null) {
+          throw new HttpException(400, 'Vendors must have a port.');
+        }
       }
     });
 

@@ -422,6 +422,11 @@ definitions:
           vatRegistrationNumber: 
             type: string
             description: Client's VAT registration number 
+          clientIPAddress:
+            type: array
+            items:
+                type: string
+                description: Client Ip address      
 
       MO:
         type : object
