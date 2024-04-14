@@ -104,7 +104,7 @@ class ProfileDetailsDto {
 
   @IsIP(IpVersion.IPv4, { each: true })
   @IsOptional()
-  clientIPAddresses: string[];
+  clientIPAddresses?: string[];
 }
 
 class MODto {
@@ -257,11 +257,11 @@ class ConnectionDetailsDto {
 
   @IsIP()
   @IsOptional()
-  ipAddress: string;
+  ipAddress?: string;
 
   @IsNumber()
   @IsOptional()
-  port: number;
+  port?: number;
 
   @IsNumber()
   @IsOptional()

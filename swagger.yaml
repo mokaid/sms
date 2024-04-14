@@ -3,11 +3,7 @@ info:
   title: Sample API
   version: '1.0.0'
   description: Example docs
-tags:
-  - name: users
-    description: users API
-  - name: Authentication
-    description: Authentication API
+
 # Define security schemes (API Key, JWT)
 securityDefinitions:
   ApiKeyAuth:
@@ -191,7 +187,53 @@ paths:
           description: 'Conflict'
         500:
           description: 'Server Error'
-
+  
+  /accounts:
+        get:
+          tags:
+            - Accounts
+          summary: Find All Accounts
+          parameters:
+            - in: query
+              name: page
+              schema:
+                type: integer
+                default: 1
+              description: Page number for pagination.
+            - in: query
+              name: limit
+              schema:
+                type: integer
+                default: 10
+              description: Number of accounts per page.
+            - in: query
+              name: orderBy
+              schema:
+                type: string
+                default: createdAt
+              description: The field to order the accounts by.
+            - in: query
+              name: sort
+              schema:
+                type: string
+                default: asc
+              description: Sorting direction, can be 'asc' or 'desc'.
+          responses:
+            200:
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/definitions/AccountProfile'
+                      message:
+                        type: string
+            500:
+              description: Server Error 
 
   /profiles:
       get:

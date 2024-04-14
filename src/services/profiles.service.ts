@@ -36,6 +36,46 @@ export class ProfileService {
     return createProfileData;
   }
 
+  public async findAllAccountDetails(
+    page: number,
+    limit: number,
+    orderBy: string,
+    sort: string,
+  ): Promise<{ accounts: any[]; totalAccounts: number }> {
+    const skip = (page - 1) * limit;
+    const sortDirection = sort === 'asc' ? 1 : -1;
+
+    const accountsPromise = ProfileModel.aggregate([
+      { $unwind: '$Accounts' },
+      {
+        $project: {
+          accountData: {
+            priceList: '$Accounts.priceList',
+            connectionDetails: '$Accounts.connection',
+            emailCoverageList: '$Accounts.emailCoverageList',
+            details: '$Accounts.details',
+          },
+          _id: '$Accounts._id',
+        },
+      },
+      { $sort: { [orderBy]: sortDirection } },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $group: {
+          _id: '$_id',
+          accounts: { $push: '$accountData' },
+        },
+      },
+    ]).exec();
+
+    const countPromise = ProfileModel.countDocuments();
+
+    const [accounts, totalAccounts] = await Promise.all([accountsPromise, countPromise]);
+
+    return { accounts, totalAccounts };
+  }
+
   public async findAllProfile(page: number, limit: number, orderBy: string, sort: string): Promise<{ profiles: Profile[]; totalProfiles: number }> {
     const skip = (page - 1) * limit;
     const sortDirection = sort === 'asc' ? 1 : -1;
@@ -87,7 +127,7 @@ export class ProfileService {
       }
     });
 
-    const updateProfileById: Profile = await ProfileModel.findByIdAndUpdate(profileId, { ...profileData }, { new: true });
+    const updateProfileById: Profile = await ProfileModel.findByIdAndUpdate(profileId, { ...profileData }, { new: true, runValidators: true });
     if (!updateProfileById) throw new HttpException(409, "Profile doesn't exist");
 
     return updateProfileById;

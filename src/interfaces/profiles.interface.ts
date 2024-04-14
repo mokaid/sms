@@ -46,7 +46,7 @@ export interface Profile {
     website: string;
     logo: string;
     vatRegistrationNumber: string;
-    clientIPAddress?: string[];
+    clientIPAddresses?: string[];
   };
   MO: {
     credit: number;

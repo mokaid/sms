@@ -1,5 +1,3 @@
-import { ParsedItem, SchemaConfig } from '@/interfaces/email.interface';
-
 import Container from 'typedi';
 import { ProfileService } from './profiles.service';
 import { imapConfig } from '@/config/email';
@@ -72,7 +70,7 @@ class EmailFetcherService {
                 const result = await this.profile.findRelevantAccountAndAttachment(profile, mail);
 
                 if (result) {
-                  const csvContent = Buffer.from(result.attachment.content, 'base64'); // Assuming base64 encoding
+                  const csvContent = Buffer.from(result.attachment.content, 'base64');
                   const parsedData = this.profile.parseCsvWithSchema(csvContent, profile.SchemaConfig);
 
                   const priceListItems = parsedData.map(item => ({

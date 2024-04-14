@@ -20,6 +20,30 @@ export class ProfleController {
     }
   };
 
+  //   async function getFullAccountsDetails(page, limit) {
+  //     const skip = (page - 1) * limit;
+
+  //     try {
+  //         const results = await ProfileModel.aggregate([
+  //             { $unwind: "$Accounts" }, // Flatten the Accounts array
+  //             { $project: {
+  //                 "priceList": "$Accounts.priceList",
+  //                 "connection": "$Accounts.connection",
+  //                 "emailCoverageList": "$Accounts.emailCoverageList",
+  //                 "accountDetails": "$Accounts.details",  // Adding account details projection
+  //                 "_id": 0
+  //             }}, // Project necessary fields
+  //             { $skip: skip }, // Pagination: skip
+  //             { $limit: limit } // Pagination: limit
+  //         ]);
+
+  //         return results;
+  //     } catch (error) {
+  //         console.error("Error in fetching full accounts details:", error);
+  //         throw error;
+  //     }
+  // }
+
   public getProfile = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
@@ -30,6 +54,27 @@ export class ProfleController {
       const { profiles, totalProfiles } = await this.profile.findAllProfile(page, limit, orderBy, sort);
 
       res.status(200).json({ data: profiles, total: totalProfiles, page, limit, message: 'findAll' });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public getAccountDetails = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const orderBy = (req.query.orderBy as string) || 'createdAt';
+      const sort = (req.query.sort as string) || 'asc';
+
+      const { accounts, totalAccounts } = await this.profile.findAllAccountDetails(page, limit, orderBy, sort);
+
+      res.status(200).json({
+        data: accounts,
+        total: totalAccounts,
+        page,
+        limit,
+        message: 'findAll',
+      });
     } catch (error) {
       next(error);
     }
