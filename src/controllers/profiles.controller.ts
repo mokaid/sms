@@ -35,27 +35,6 @@ export class ProfleController {
     }
   };
 
-  public getAccountDetails = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-      const orderBy = (req.query.orderBy as string) || 'createdAt';
-      const sort = (req.query.sort as string) || 'asc';
-
-      const { accounts, totalAccounts } = await this.profile.findAllAccountDetails(page, limit, orderBy, sort);
-
-      res.status(200).json({
-        data: accounts,
-        total: totalAccounts,
-        page,
-        limit,
-        message: 'findAll',
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
   public getProfileById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const profileId: string = req.params.id;
@@ -75,19 +54,6 @@ export class ProfleController {
       const updateProfileData: Profile = await this.profile.updateProfile(profileId, profileData);
 
       res.status(200).json({ data: updateProfileData, message: 'updated' });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  public updatePriceList = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const customId: string = req.params.id;
-      const priceListData: Profile = req.body;
-
-      const updatePriceListData: Profile = await this.profile.updateProfile(customId, priceListData);
-
-      res.status(200).json({ data: updatePriceListData, message: 'updated' });
     } catch (error) {
       next(error);
     }

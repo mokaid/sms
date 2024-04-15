@@ -235,6 +235,76 @@ paths:
             500:
               description: Server Error 
 
+  /accounts/{id}:
+      put:
+        tags:
+          - Accounts
+        summary: Update Price List for an Account
+        description: Updates the price list for a specific account. Only 'price' and 'currency' fields can be updated. If 'price' changes, 'oldPrice' will be updated to the previous price.
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema:
+              type: string
+            description: The ID of the account for which to update the price list.
+          - name: body
+            in: body
+            description: Object containing the new price and/or currency.
+            required: true
+            schema:
+              type: object
+              required: [price, currency]  # Depending on your logic, adjust required fields here
+              properties:
+                price:
+                  type: string
+                  description: New price to update. Required if 'currency' is not provided.
+                currency:
+                  type: string
+                  description: Currency for the new price. Required if 'price' is not provided.
+              example:
+                price: "100.00"
+                currency: "USD"
+        responses:
+          200:
+            description: Price list updated successfully
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    data:
+                      $ref: '#/definitions/AccountProfile'
+                    message:
+                      type: string
+                      example: 'Price list updated successfully'
+          404:
+            description: No valid account or price list found for the given ID
+          400:
+            description: Bad Request (e.g., invalid input data or attempting to update restricted fields)
+          409:
+            description: Conflict (e.g., unable to update the price list due to existing data state)
+          500:
+            description: Server error
+      delete:
+        tags:
+        - Accounts
+        summary: Delete Price By Id
+        parameters:
+        - name: id
+          in: path
+          description: price Id
+          required: true
+        responses:
+          200:
+            description: 'OK'
+          409:
+            description: 'Conflict'
+          500:
+            description: 'Server Error'
+
+
+
   /profiles:
       get:
         tags:

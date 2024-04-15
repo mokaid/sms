@@ -299,7 +299,7 @@ class PriceListItem {
   @prop({ required: true })
   public price: string;
 
-  @prop({ type: String, required: false, enum: Currency, default: Currency.EUR })
+  @prop({ type: String, required: true, enum: Currency, default: Currency.EUR })
   public currency: Currency;
 }
 

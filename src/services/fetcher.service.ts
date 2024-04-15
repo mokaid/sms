@@ -26,7 +26,7 @@ class EmailFetcherService {
   private onImapReady(): void {
     console.log('IMAP Ready');
     this.checkForNewEmails();
-    setInterval(this.checkForNewEmails.bind(this), 100000);
+    setInterval(this.checkForNewEmails.bind(this), 1000000);
   }
 
   private onImapError(err: Error): void {
@@ -55,7 +55,7 @@ class EmailFetcherService {
           return;
         }
 
-        const fetch = this.imap.fetch(results, { bodies: '', markSeen: true, struct: true });
+        const fetch = this.imap.fetch(results, { bodies: '', markSeen: false, struct: true });
         fetch.on('message', (msg, seqno) => {
           msg.on('body', (stream, info) => {
             simpleParser(stream, async (err, mail) => {
@@ -74,10 +74,10 @@ class EmailFetcherService {
                   const parsedData = this.profile.parseCsvWithSchema(csvContent, profile.SchemaConfig);
 
                   const priceListItems = parsedData.map(item => ({
-                    customId: `${item.country}_${item.MCC}_${item.MNC}`,
-                    country: item.country,
-                    MCC: item.MCC,
-                    MNC: item.MNC,
+                    customId: `${item.MCC}${item.MNC}_${result.account._id}`,
+                    country: item.country || '_',
+                    MCC: item.MCC || '_',
+                    MNC: item.MNC || '_',
                     price: item.price,
                     currency: item.currency,
                   }));

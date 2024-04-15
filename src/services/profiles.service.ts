@@ -36,46 +36,6 @@ export class ProfileService {
     return createProfileData;
   }
 
-  public async findAllAccountDetails(
-    page: number,
-    limit: number,
-    orderBy: string,
-    sort: string,
-  ): Promise<{ accounts: any[]; totalAccounts: number }> {
-    const skip = (page - 1) * limit;
-    const sortDirection = sort === 'asc' ? 1 : -1;
-
-    const accountsPromise = ProfileModel.aggregate([
-      { $unwind: '$Accounts' },
-      {
-        $project: {
-          accountData: {
-            priceList: '$Accounts.priceList',
-            connectionDetails: '$Accounts.connection',
-            emailCoverageList: '$Accounts.emailCoverageList',
-            details: '$Accounts.details',
-          },
-          _id: '$Accounts._id',
-        },
-      },
-      { $sort: { [orderBy]: sortDirection } },
-      { $skip: skip },
-      { $limit: limit },
-      {
-        $group: {
-          _id: '$_id',
-          accounts: { $push: '$accountData' },
-        },
-      },
-    ]).exec();
-
-    const countPromise = ProfileModel.countDocuments();
-
-    const [accounts, totalAccounts] = await Promise.all([accountsPromise, countPromise]);
-
-    return { accounts, totalAccounts };
-  }
-
   public async findAllProfile(page: number, limit: number, orderBy: string, sort: string): Promise<{ profiles: Profile[]; totalProfiles: number }> {
     const skip = (page - 1) * limit;
     const sortDirection = sort === 'asc' ? 1 : -1;
@@ -144,7 +104,7 @@ export class ProfileService {
   }
 
   public async updatePriceList(accountId: ObjectId, newPriceListItems) {
-    const account = await ProfileModel.findOne({ 'Accounts._id': accountId }, { 'Accounts.priceList': 0 });
+    const account = await ProfileModel.findOne({ 'Accounts._id': accountId });
     if (!account) {
       throw new Error('Account not found');
     }
@@ -154,40 +114,41 @@ export class ProfileService {
       throw new Error("Account not found in profile's accounts");
     }
 
+    // Initialize the price list if not present
+    if (!account.Accounts[accountIndex].priceList) {
+      account.Accounts[accountIndex].priceList = [];
+    }
+
     if (account.Accounts[accountIndex].emailCoverageList.deleteAllExisting) {
+      // If deleting all existing, filter and set the new items
       account.Accounts[accountIndex].priceList = newPriceListItems.filter(this.isValidPriceListItem);
     } else {
-      const updatedPriceList = [];
+      const updatedPriceList = new Map(account.Accounts[accountIndex].priceList.map(item => [item.customId, item]));
 
       newPriceListItems.forEach(newItem => {
         if (!this.isValidPriceListItem(newItem)) return;
 
-        const existingItemIndex = account.Accounts[accountIndex].priceList.findIndex(item => item.customId === newItem.customId);
-        if (existingItemIndex !== -1) {
-          const existingItem = account.Accounts[accountIndex].priceList[existingItemIndex];
+        const customId = `${newItem.MCC}${newItem.MNC}_${account._id}`;
+        const existingItem = updatedPriceList.get(customId);
+
+        if (existingItem) {
           if (existingItem.price !== newItem.price) {
-            account.Accounts[accountIndex].priceList[existingItemIndex] = {
+            updatedPriceList.set(customId, {
               ...existingItem,
               oldPrice: existingItem.price,
               price: newItem.price,
               country: newItem.country,
-              customId: `${newItem.country}_${newItem.MCC}_${newItem.MNC}`,
               MCC: newItem.MCC,
               MNC: newItem.MNC,
-            };
+              customId: customId,
+            });
           }
         } else {
-          account.Accounts[accountIndex].priceList.push(newItem);
+          updatedPriceList.set(customId, newItem);
         }
       });
 
-      account.Accounts[accountIndex].priceList.forEach(item => {
-        if (!updatedPriceList.some(updatedItem => updatedItem.customId === item.customId)) {
-          updatedPriceList.push(item);
-        }
-      });
-
-      account.Accounts[accountIndex].priceList = updatedPriceList;
+      account.Accounts[accountIndex].priceList = Array.from(updatedPriceList.values());
     }
 
     await account.save();

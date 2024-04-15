@@ -1,19 +1,21 @@
+import { AccountController } from '@/controllers/accounts.controller';
 import { AuthMiddleware } from '@/middlewares/auth.middleware';
-import { ProfleController } from '@/controllers/profiles.controller';
 import { Router } from 'express';
 import { Routes } from '@interfaces/routes.interface';
 
 export class AccountRoute implements Routes {
   public path = '/accounts';
   public router = Router();
-  public profile = new ProfleController();
+  public account = new AccountController();
 
   constructor() {
     this.initializeRoutes();
   }
 
   private initializeRoutes() {
-    this.router.get(`${this.path}`, AuthMiddleware, this.profile.getAccountDetails);
-    this.router.put(`${this.path}/:id`, AuthMiddleware, this.profile.updatePriceList);
+    this.router.get(`${this.path}`, AuthMiddleware, this.account.getAccountDetails);
+    this.router.put(`${this.path}/:id`, AuthMiddleware, this.account.updatePriceList);
+
+    this.router.delete(`${this.path}/:id`, AuthMiddleware, this.account.deletePrice);
   }
 }
