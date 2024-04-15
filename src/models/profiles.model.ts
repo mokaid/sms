@@ -281,20 +281,20 @@ class EmailCoveragelistDetails {
 }
 
 class PriceListItem {
-  @prop({ required: true })
+  @prop({ required: true, index: true, unique: true })
   public customId: string;
 
   @prop({ required: true })
   public country: string;
 
-  @prop({ required: false })
+  @prop({ required: true })
   public MCC: string;
 
-  @prop({ required: false })
+  @prop({ required: true })
   public MNC: string;
 
   @prop({ required: false })
-  public oldPrice: string;
+  public oldPrice?: string;
 
   @prop({ required: true })
   public price: string;

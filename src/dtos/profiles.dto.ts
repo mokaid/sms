@@ -330,6 +330,30 @@ class EmailCoveragelistDetailsDto {
   deleteAllExisting: boolean;
 }
 
+class PriceListDetailsDto {
+  @IsString()
+  customId: string;
+
+  @IsString()
+  country: string;
+
+  @IsString()
+  MCC: string;
+
+  @IsString()
+  MNC: string;
+
+  @IsString()
+  @IsOptional()
+  oldPrice?: string;
+
+  @IsString()
+  price: string;
+
+  @IsEnum(Currency)
+  currency: Currency;
+}
+
 class AccountDto {
   @ValidateNested()
   @Type(() => AccountDetailsDto)
@@ -342,6 +366,10 @@ class AccountDto {
   @ValidateNested()
   @Type(() => EmailCoveragelistDetailsDto)
   emailCoverageList?: EmailCoveragelistDetailsDto;
+
+  @ValidateNested()
+  @Type(() => PriceListDetailsDto)
+  priceList?: PriceListDetailsDto[];
 }
 
 class FieldsDto {

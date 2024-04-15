@@ -80,7 +80,7 @@ export class ProfileService {
     const skip = (page - 1) * limit;
     const sortDirection = sort === 'asc' ? 1 : -1;
 
-    const profilesPromise = ProfileModel.find()
+    const profilesPromise = ProfileModel.find({}, { 'Accounts.priceList': 0 })
       .skip(skip)
       .limit(limit)
       .sort({ [orderBy]: sortDirection });
@@ -93,23 +93,26 @@ export class ProfileService {
   }
 
   public async findProfileById(profileId: string): Promise<Profile> {
-    const findProfiler: Profile = await ProfileModel.findOne({ _id: profileId });
+    const findProfiler: Profile = await ProfileModel.findOne({ _id: profileId }, { 'Accounts.priceList': 0 });
     if (!findProfiler) throw new HttpException(409, "Profile doesn't exist");
 
     return findProfiler;
   }
 
   public async findProfileByAccountEmail(accountEmail: string): Promise<Profile> {
-    const findProfile: Profile = await ProfileModel.findOne({ 'Accounts.emailCoverageList.email': accountEmail });
+    const findProfile: Profile = await ProfileModel.findOne({ 'Accounts.emailCoverageList.email': accountEmail }, { 'Accounts.priceList': 0 });
 
     return findProfile;
   }
 
   public async updateProfile(profileId: string, profileData: ProfileDto): Promise<Profile> {
     if (profileData.ProfileDetails.accountingReference) {
-      const findProfile: Profile = await ProfileModel.findOne({
-        'ProfileDetails.accountingReference': profileData.ProfileDetails.accountingReference,
-      });
+      const findProfile: Profile = await ProfileModel.findOne(
+        {
+          'ProfileDetails.accountingReference': profileData.ProfileDetails.accountingReference,
+        },
+        { 'Accounts.priceList': 0 },
+      );
       if (findProfile && findProfile._id != profileId) throw new HttpException(409, `This profile already exists`);
     }
 
@@ -127,7 +130,7 @@ export class ProfileService {
       }
     });
 
-    const updateProfileById: Profile = await ProfileModel.findByIdAndUpdate(profileId, { ...profileData }, { new: true, runValidators: true });
+    const updateProfileById: Profile = await ProfileModel.findByIdAndUpdate(profileId, { ...profileData }, { new: true });
     if (!updateProfileById) throw new HttpException(409, "Profile doesn't exist");
 
     return updateProfileById;
@@ -141,7 +144,7 @@ export class ProfileService {
   }
 
   public async updatePriceList(accountId: ObjectId, newPriceListItems) {
-    const account = await ProfileModel.findOne({ 'Accounts._id': accountId });
+    const account = await ProfileModel.findOne({ 'Accounts._id': accountId }, { 'Accounts.priceList': 0 });
     if (!account) {
       throw new Error('Account not found');
     }

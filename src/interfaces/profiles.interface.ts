@@ -120,5 +120,14 @@ export interface Profile {
       partialFileName: string;
       deleteAllExisting: boolean;
     };
+    priceList?: Array<{
+      customId: string;
+      country: string;
+      MCC: string;
+      MNC: string;
+      oldPrice?: string;
+      price: string;
+      currency: Currency;
+    }>;
   }>;
 }

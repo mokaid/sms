@@ -20,30 +20,6 @@ export class ProfleController {
     }
   };
 
-  //   async function getFullAccountsDetails(page, limit) {
-  //     const skip = (page - 1) * limit;
-
-  //     try {
-  //         const results = await ProfileModel.aggregate([
-  //             { $unwind: "$Accounts" }, // Flatten the Accounts array
-  //             { $project: {
-  //                 "priceList": "$Accounts.priceList",
-  //                 "connection": "$Accounts.connection",
-  //                 "emailCoverageList": "$Accounts.emailCoverageList",
-  //                 "accountDetails": "$Accounts.details",  // Adding account details projection
-  //                 "_id": 0
-  //             }}, // Project necessary fields
-  //             { $skip: skip }, // Pagination: skip
-  //             { $limit: limit } // Pagination: limit
-  //         ]);
-
-  //         return results;
-  //     } catch (error) {
-  //         console.error("Error in fetching full accounts details:", error);
-  //         throw error;
-  //     }
-  // }
-
   public getProfile = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
@@ -80,7 +56,7 @@ export class ProfleController {
     }
   };
 
-  public getPofileById = async (req: Request, res: Response, next: NextFunction) => {
+  public getProfileById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const profileId: string = req.params.id;
       const findOneProfileData: Profile = await this.profile.findProfileById(profileId);
@@ -99,6 +75,19 @@ export class ProfleController {
       const updateProfileData: Profile = await this.profile.updateProfile(profileId, profileData);
 
       res.status(200).json({ data: updateProfileData, message: 'updated' });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public updatePriceList = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const customId: string = req.params.id;
+      const priceListData: Profile = req.body;
+
+      const updatePriceListData: Profile = await this.profile.updateProfile(customId, priceListData);
+
+      res.status(200).json({ data: updatePriceListData, message: 'updated' });
     } catch (error) {
       next(error);
     }
