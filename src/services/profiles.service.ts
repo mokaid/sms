@@ -36,19 +36,31 @@ export class ProfileService {
     return createProfileData;
   }
 
-  public async findAllProfile(page: number, limit: number, orderBy: string, sort: string): Promise<{ profiles: Profile[]; totalProfiles: number }> {
+  public async findAllProfile(
+    page: number,
+    limit: number,
+    orderBy: string,
+    sort: string,
+    searchTerm: string,
+  ): Promise<{ profiles: Profile[]; totalProfiles: number }> {
     const skip = (page - 1) * limit;
+    const regex = new RegExp(searchTerm, 'i');
     const sortDirection = sort === 'asc' ? 1 : -1;
 
-    const profilesPromise = ProfileModel.find({}, { 'Accounts.priceList': 0 })
+    const searchableFields = ['legalName', 'accountingReference', 'address', 'vatRegistrationNumber', 'phoneNumber', 'currency'];
+
+    const searchQuery = {
+      $or: searchableFields.map(field => ({ [`ProfileDetails.${field}`]: { $regex: regex } })),
+    };
+
+    const profilesPromise = ProfileModel.find(searchQuery)
       .skip(skip)
       .limit(limit)
       .sort({ [orderBy]: sortDirection });
 
-    const countPromise = ProfileModel.countDocuments();
+    const countPromise = ProfileModel.countDocuments(searchQuery);
 
     const [profiles, totalProfiles] = await Promise.all([profilesPromise, countPromise]);
-
     return { profiles, totalProfiles };
   }
 

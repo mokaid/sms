@@ -389,6 +389,12 @@ paths:
               type: string
               default: asc
             description: Sorting direction, can be 'asc' or 'desc'.
+          - in: query
+            name: searchTerm
+            schema:
+              type: string
+            description: The search term used to perform a partial search across multiple profile details fields, such as legal name, accounting reference, etc. There is no default value; a blank value implies no specific search filter.
+                    
         responses:
           200:
             description: OK
