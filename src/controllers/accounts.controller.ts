@@ -7,6 +7,19 @@ import { Profile } from '@/interfaces/profiles.interface';
 export class AccountController {
   public account = Container.get(AccountService);
 
+  public addPriceListItem = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const priceListData: Profile = req.body;
+      const accountId: string = req.params.id;
+
+      const createPriceListData: Profile = await this.account.createPriceList(priceListData, accountId);
+
+      res.status(201).json({ data: createPriceListData, message: 'created' });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   public getAccountDetails = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const page = parseInt(req.query.page as string) || 1;

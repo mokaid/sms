@@ -235,6 +235,9 @@ paths:
             500:
               description: Server Error 
 
+  
+
+
   /accounts/{id}:
       put:
         tags:
@@ -302,6 +305,62 @@ paths:
             description: 'Conflict'
           500:
             description: 'Server Error'
+      post:
+          tags:
+            - Accounts
+          summary: Add a Price List Item
+          description: Add a new price list item to the specified account's price list.
+          operationId: addPriceListItem
+          parameters:
+            - name: id
+              in: path
+              required: true
+              description: The ID of the account to which the price list item is to be added.
+              schema:
+                type: string
+            - name: body
+              in: body
+              description: Price list item data
+              required: true
+              schema:
+                type: object
+                required:
+                  - country
+                  - MCC
+                  - MNC
+                  - price
+                  - currency
+                properties:
+                  country:
+                    type: string
+                    description: Country code of the price list item.
+                  MCC:
+                    type: string
+                    description: Mobile Country Code.
+                  MNC:
+                    type: string
+                    description: Mobile Network Code.
+                  oldPrice:
+                    type: string
+                    nullable: true
+                    description: Previous price, if applicable.
+                  price:
+                    type: string
+                    description: Current price of the item.
+                  currency:
+                    type: string
+                    enum: [USD, EUR, GBP]
+                    description: Currency used for the price.
+        
+                responses:
+                  '201':
+                    description: Successfully added the price list item
+                  '400':
+                    description: Invalid input
+                  '404':
+                    description: Account not found
+
+
 
 
 

@@ -5,6 +5,33 @@ import { Service } from 'typedi';
 
 @Service()
 export class AccountService {
+  public async createPriceList(priceListData: any, accountId: string): Promise<Profile> {
+    console.log(accountId);
+    const profile = await ProfileModel.findOne({ 'Accounts._id': accountId });
+    if (!profile) {
+      throw new Error('Account not found');
+    }
+
+    const customId = `${priceListData.MNC}${priceListData.MCC}_${accountId}`;
+
+    const newItem = {
+      ...priceListData,
+      customId: customId,
+      currency: priceListData.currency || 'EUR',
+    };
+
+    const accountIndex = profile.Accounts.findIndex((acc: any) => acc._id.toString() === accountId);
+    if (accountIndex === -1) {
+      throw new Error('Account not found in profile');
+    }
+
+    profile.Accounts[accountIndex].priceList.push(newItem);
+
+    await profile.save();
+
+    return profile;
+  }
+
   public async findAllAccountDetails(
     page: number,
     limit: number,
