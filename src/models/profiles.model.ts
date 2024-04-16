@@ -11,7 +11,7 @@ import {
   InvoiceTemplate,
   PaymentType,
 } from '@/enums/profiles.enums';
-import { Severity, getModelForClass, modelOptions, post, pre, prop } from '@typegoose/typegoose';
+import { Severity, getModelForClass, index, modelOptions, post, pre, prop } from '@typegoose/typegoose';
 
 class FieldConfig {
   @prop({ required: true })

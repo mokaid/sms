@@ -6,30 +6,37 @@ import { Service } from 'typedi';
 @Service()
 export class AccountService {
   public async createPriceList(priceListData: any, accountId: string): Promise<Profile> {
-    console.log(accountId);
-    const profile = await ProfileModel.findOne({ 'Accounts._id': accountId });
-    if (!profile) {
-      throw new Error('Account not found');
-    }
+    console.log(`Creating price list for account ID: ${accountId}`);
 
     const customId = `${priceListData.MNC}${priceListData.MCC}_${accountId}`;
+    console.log(`Generated customId: ${customId}`);
 
-    const newItem = {
-      ...priceListData,
-      customId: customId,
-      currency: priceListData.currency || 'EUR',
-    };
+    const profile = await ProfileModel.findOneAndUpdate(
+      {
+        'Accounts._id': accountId,
+        'Accounts.priceList.customId': { $ne: customId },
+      },
+      {
+        $push: {
+          'Accounts.$.priceList': {
+            ...priceListData,
+            customId: customId,
+            currency: priceListData.currency || 'EUR',
+          },
+        },
+      },
+      { new: true, runValidators: true },
+    );
 
-    const accountIndex = profile.Accounts.findIndex((acc: any) => acc._id.toString() === accountId);
-    if (accountIndex === -1) {
-      throw new Error('Account not found in profile');
+    if (!profile) {
+      const existingCustomId = await ProfileModel.findOne({ 'Accounts.priceList.customId': customId });
+      if (existingCustomId) {
+        throw new HttpException(400, 'CustomId already exists');
+      }
+      throw new HttpException(404, 'Account not found or invalid customId');
     }
 
-    profile.Accounts[accountIndex].priceList.push(newItem);
-
-    await profile.save();
-
-    return profile;
+    return priceListData;
   }
 
   public async findAllAccountDetails(
