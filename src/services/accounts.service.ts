@@ -50,81 +50,67 @@ export class AccountService {
     limit: number,
     orderBy: string,
     sort: string,
-    price?: string, // Change these to string to match DB
+    price?: string,
     priceCondition?: string,
-    oldPrice?: string, // Change these to string to match DB
+    oldPrice?: string,
     oldPriceCondition?: string,
     country?: string,
     mnc?: string,
     mcc?: string,
     currency?: string,
   ): Promise<AccountDetail> {
-    // Use defined interface
     const skip = (page - 1) * limit;
     const sortDirection = sort === 'asc' ? 1 : -1;
 
-    // Begin pipeline
     const pipeline: any[] = [
-      // Use any[] to avoid TypeScript complaints
       { $unwind: '$Accounts' },
       { $unwind: '$Accounts.priceList' },
-    ];
-
-    // Prepare the match conditions based on the input
-    const matchConditions: any = {};
-    if (price !== undefined && price !== null) {
-      const formattedPrice = String(price).trim(); // Convert to string and trim
-      matchConditions[`Accounts.priceList.price`] = { [`$${priceCondition || 'eq'}`]: formattedPrice };
-    }
-    if (oldPrice !== undefined) {
-      matchConditions[`Accounts.priceList.oldPrice`] = { [`$${oldPriceCondition || 'eq'}`]: oldPrice };
-    }
-    if (country) {
-      matchConditions['Accounts.priceList.country'] = country;
-    }
-    if (mnc) {
-      matchConditions['Accounts.priceList.MNC'] = mnc;
-    }
-    if (mcc) {
-      matchConditions['Accounts.priceList.MCC'] = mcc;
-    }
-    if (currency) {
-      matchConditions['Accounts.priceList.currency'] = currency;
-    }
-
-    // Add the match stage after unwinding
-    pipeline.push({ $match: matchConditions });
-
-    // Continue with the rest of the pipeline
-    pipeline.push(
+      {
+        $match: {
+          ...(price !== undefined && price !== null && { 'Accounts.priceList.price': { [`$${priceCondition || 'eq'}`]: String(price).trim() } }),
+          ...(oldPrice !== undefined && { 'Accounts.priceList.oldPrice': { [`$${oldPriceCondition || 'eq'}`]: oldPrice } }),
+          ...(country && { 'Accounts.priceList.country': country }),
+          ...(mnc && { 'Accounts.priceList.MNC': mnc }),
+          ...(mcc && { 'Accounts.priceList.MCC': mcc }),
+          ...(currency && { 'Accounts.priceList.currency': currency }),
+        },
+      },
       {
         $project: {
-          accountData: {
-            priceList: '$Accounts.priceList',
-            connectionDetails: '$Accounts.connection',
-            emailCoverageList: '$Accounts.emailCoverageList',
-            details: '$Accounts.details',
+          priceList: {
+            customId: '$Accounts.priceList.customId',
+            country: '$Accounts.priceList.country',
+            MCC: '$Accounts.priceList.MCC',
+            MNC: '$Accounts.priceList.MNC',
+            price: '$Accounts.priceList.price',
+            currency: '$Accounts.priceList.currency',
+            name: '$Accounts.details.name',
+            accountProfile: '$Accounts.details.accountProfile',
+            userName: '$Accounts.connection.userName',
+            ipAddress: '$Accounts.connection.ipAddress',
+            email: '$Accounts.emailCoverageList.email',
           },
           _id: 0,
         },
       },
-      { $sort: { [`Accounts.${orderBy}`]: sortDirection } },
+      { $sort: { [`priceList.${orderBy}`]: sortDirection } },
       { $skip: skip },
       { $limit: limit },
       {
         $group: {
-          _id: null, // Use null to group all into one group
-          accounts: { $push: '$accountData' },
+          _id: null,
+          accounts: { $push: '$priceList' },
         },
       },
-    );
+    ];
 
     const accountsPromise = ProfileModel.aggregate(pipeline).exec();
-    const countPromise = ProfileModel.countDocuments(matchConditions);
+    const countPipeline = [...pipeline.slice(0, 4), { $count: 'totalPriceLists' }];
+    const countPromise = ProfileModel.aggregate(countPipeline).exec();
 
     const [accounts, totalAccounts] = await Promise.all([accountsPromise, countPromise]);
 
-    return { accounts, totalAccounts };
+    return { accounts, totalAccounts: totalAccounts[0] ? totalAccounts[0].totalPriceLists : 0 };
   }
 
   public async updatePriceList(customId: string, newPriceData): Promise<Profile> {

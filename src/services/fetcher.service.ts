@@ -55,7 +55,7 @@ class EmailFetcherService {
           return;
         }
 
-        const fetch = this.imap.fetch(results, { bodies: '', markSeen: false, struct: true });
+        const fetch = this.imap.fetch(results, { bodies: '', markSeen: true, struct: true });
         fetch.on('message', (msg, seqno) => {
           msg.on('body', (stream, info) => {
             simpleParser(stream, async (err, mail) => {
