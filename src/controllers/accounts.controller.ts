@@ -27,7 +27,31 @@ export class AccountController {
       const orderBy = (req.query.orderBy as string) || 'createdAt';
       const sort = (req.query.sort as string) || 'asc';
 
-      const { accounts, totalAccounts } = await this.account.findAllAccountDetails(page, limit, orderBy, sort);
+      const price = req.query.price as string;
+      const priceCondition = (req.query.priceCondition as string) || 'eq'; // Can be 'gt', 'lt', 'eq'
+
+      const oldPrice = req.query.oldPrice as string;
+      const oldPriceCondition = (req.query.oldPriceCondition as string) || 'eq'; // Can be 'gt', 'lt', 'eq'
+
+      const country = req.query.country as string;
+      const mnc = req.query.mnc as string;
+      const mcc = req.query.mcc as string;
+      const currency = req.query.currency as string;
+
+      const { accounts, totalAccounts } = await this.account.findAllAccountDetails(
+        page,
+        limit,
+        orderBy,
+        sort,
+        price,
+        priceCondition,
+        oldPrice,
+        oldPriceCondition,
+        country,
+        mnc,
+        mcc,
+        currency,
+      );
 
       res.status(200).json({
         data: accounts,

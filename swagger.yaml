@@ -189,53 +189,102 @@ paths:
           description: 'Server Error'
   
   /accounts:
-        get:
-          tags:
-            - Accounts
-          summary: Find All Accounts
-          parameters:
-            - in: query
-              name: page
+    get:
+      tags:
+        - Accounts
+      summary: Find All Accounts
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination.
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of accounts per page.
+        - in: query
+          name: orderBy
+          schema:
+            type: string
+            default: createdAt
+          description: The field to order the accounts by.
+        - in: query
+          name: sort
+          schema:
+            type: string
+            default: asc
+          description: Sorting direction, can be 'asc' or 'desc'.
+        - in: query
+          name: price
+          schema:
+            type: number
+          description: Price filter for dynamic search. Specify the price to compare based on the condition provided.
+        - in: query
+          name: priceCondition
+          schema:
+            type: string
+            default: 'eq'
+          description: Condition to apply on price filter, can be 'gt' (greater than), 'lt' (less than), or 'eq' (equal to).
+        - in: query
+          name: oldPrice
+          schema:
+            type: number
+          description: Old price filter for dynamic search. Specify the old price to compare based on the condition provided.
+        - in: query
+          name: oldPriceCondition
+          schema:
+            type: string
+            default: 'eq'
+          description: Condition to apply on old price filter, can be 'gt', 'lt', or 'eq'.
+        - in: query
+          name: country
+          schema:
+            type: string
+          description: Country filter for dynamic search.
+        - in: query
+          name: mnc
+          schema:
+            type: string
+          description: Mobile Network Code (MNC) filter for dynamic search.
+        - in: query
+          name: mcc
+          schema:
+            type: string
+          description: Mobile Country Code (MCC) filter for dynamic search.
+        - in: query
+          name: currency
+          schema:
+            type: string
+          description: Currency filter for dynamic search.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
               schema:
-                type: integer
-                default: 1
-              description: Page number for pagination.
-            - in: query
-              name: limit
-              schema:
-                type: integer
-                default: 10
-              description: Number of accounts per page.
-            - in: query
-              name: orderBy
-              schema:
-                type: string
-                default: createdAt
-              description: The field to order the accounts by.
-            - in: query
-              name: sort
-              schema:
-                type: string
-                default: asc
-              description: Sorting direction, can be 'asc' or 'desc'.
-          responses:
-            200:
-              description: OK
-              content:
-                application/json:
-                  schema:
-                    type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/definitions/AccountProfile'
-                      message:
-                        type: string
-            500:
-              description: Server Error 
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/definitions/AccountProfile'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+                  message:
+                    type: string
+        500:
+          description: Server Error
 
-  
+
+    
 
 
   /accounts/{id}:
@@ -435,7 +484,7 @@ paths:
   /profiles/{id}:
     get:
       tags:
-       - Account Profiles
+      - Account Profiles
       summary: Find Profile By Id
       parameters:
       - name: id

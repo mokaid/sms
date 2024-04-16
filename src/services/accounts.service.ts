@@ -1,7 +1,13 @@
+import { Document } from 'mongoose';
 import { HttpException } from '@/exceptions/HttpException';
 import { Profile } from '@/interfaces/profiles.interface';
 import { ProfileModel } from '@/models/profiles.model';
 import { Service } from 'typedi';
+
+interface AccountDetail {
+  accounts: Document[]; // Use appropriate document type
+  totalAccounts: number;
+}
 
 @Service()
 export class AccountService {
@@ -44,12 +50,53 @@ export class AccountService {
     limit: number,
     orderBy: string,
     sort: string,
-  ): Promise<{ accounts: any[]; totalAccounts: number }> {
+    price?: string, // Change these to string to match DB
+    priceCondition?: string,
+    oldPrice?: string, // Change these to string to match DB
+    oldPriceCondition?: string,
+    country?: string,
+    mnc?: string,
+    mcc?: string,
+    currency?: string,
+  ): Promise<AccountDetail> {
+    // Use defined interface
     const skip = (page - 1) * limit;
     const sortDirection = sort === 'asc' ? 1 : -1;
 
-    const accountsPromise = ProfileModel.aggregate([
+    // Begin pipeline
+    const pipeline: any[] = [
+      // Use any[] to avoid TypeScript complaints
       { $unwind: '$Accounts' },
+      { $unwind: '$Accounts.priceList' },
+    ];
+
+    // Prepare the match conditions based on the input
+    const matchConditions: any = {};
+    if (price !== undefined && price !== null) {
+      const formattedPrice = String(price).trim(); // Convert to string and trim
+      matchConditions[`Accounts.priceList.price`] = { [`$${priceCondition || 'eq'}`]: formattedPrice };
+    }
+    if (oldPrice !== undefined) {
+      matchConditions[`Accounts.priceList.oldPrice`] = { [`$${oldPriceCondition || 'eq'}`]: oldPrice };
+    }
+    if (country) {
+      matchConditions['Accounts.priceList.country'] = country;
+    }
+    if (mnc) {
+      matchConditions['Accounts.priceList.MNC'] = mnc;
+    }
+    if (mcc) {
+      matchConditions['Accounts.priceList.MCC'] = mcc;
+    }
+    if (currency) {
+      matchConditions['Accounts.priceList.currency'] = currency;
+    }
+
+    // Add the match stage after unwinding
+    pipeline.push({ $match: matchConditions });
+
+    // Continue with the rest of the pipeline
+    pipeline.push(
       {
         $project: {
           accountData: {
@@ -58,21 +105,22 @@ export class AccountService {
             emailCoverageList: '$Accounts.emailCoverageList',
             details: '$Accounts.details',
           },
-          _id: '$Accounts._id',
+          _id: 0,
         },
       },
-      { $sort: { [orderBy]: sortDirection } },
+      { $sort: { [`Accounts.${orderBy}`]: sortDirection } },
       { $skip: skip },
       { $limit: limit },
       {
         $group: {
-          _id: '$_id',
+          _id: null, // Use null to group all into one group
           accounts: { $push: '$accountData' },
         },
       },
-    ]).exec();
+    );
 
-    const countPromise = ProfileModel.countDocuments();
+    const accountsPromise = ProfileModel.aggregate(pipeline).exec();
+    const countPromise = ProfileModel.countDocuments(matchConditions);
 
     const [accounts, totalAccounts] = await Promise.all([accountsPromise, countPromise]);
 
