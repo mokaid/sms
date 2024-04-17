@@ -1,4 +1,5 @@
 import Container from 'typedi';
+import { EMAIL_CHECK_INTERVAL } from '@/config';
 import { ProfileService } from './profiles.service';
 import { imapConfig } from '@/config/email';
 import { simpleParser } from 'mailparser';
@@ -24,9 +25,9 @@ class EmailFetcherService {
   }
 
   private onImapReady(): void {
-    console.log('IMAP Ready');
+    console.log('IMAP Ready', EMAIL_CHECK_INTERVAL);
     this.checkForNewEmails();
-    setInterval(this.checkForNewEmails.bind(this), 100000);
+    setInterval(this.checkForNewEmails.bind(this), parseInt(EMAIL_CHECK_INTERVAL));
   }
 
   private onImapError(err: Error): void {

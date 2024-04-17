@@ -53,7 +53,7 @@ export class ProfileService {
       $or: searchableFields.map(field => ({ [`ProfileDetails.${field}`]: { $regex: regex } })),
     };
 
-    const profilesPromise = ProfileModel.find(searchQuery)
+    const profilesPromise = ProfileModel.find(searchQuery, { 'Accounts.priceList': 0 })
       .skip(skip)
       .limit(limit)
       .sort({ [orderBy]: sortDirection });
@@ -65,7 +65,7 @@ export class ProfileService {
   }
 
   public async findProfileById(profileId: string): Promise<Profile> {
-    const findProfiler: Profile = await ProfileModel.findOne({ _id: profileId }, { 'Accounts.priceList': 0 });
+    const findProfiler: Profile = await ProfileModel.findOne({ _id: profileId });
     if (!findProfiler) throw new HttpException(409, "Profile doesn't exist");
 
     return findProfiler;
@@ -73,6 +73,12 @@ export class ProfileService {
 
   public async findProfileByAccountEmail(accountEmail: string): Promise<Profile> {
     const findProfile: Profile = await ProfileModel.findOne({ 'Accounts.emailCoverageList.email': accountEmail }, { 'Accounts.priceList': 0 });
+
+    return findProfile;
+  }
+
+  public async findProfileByAccountID(accountId: string): Promise<Profile> {
+    const findProfile: Profile = await ProfileModel.findOne({ 'Accounts._id': accountId }, { 'Accounts.priceList': 0 });
 
     return findProfile;
   }
@@ -115,7 +121,7 @@ export class ProfileService {
     return deleteProfileById;
   }
 
-  public async updatePriceList(accountId: ObjectId, newPriceListItems) {
+  public async updatePriceList(accountId: string, newPriceListItems: any[]) {
     const account = await ProfileModel.findOne({ 'Accounts._id': accountId });
     if (!account) {
       throw new Error('Account not found');
@@ -141,10 +147,15 @@ export class ProfileService {
         if (!this.isValidPriceListItem(newItem)) return;
 
         const customId = `${newItem.MCC}${newItem.MNC}_${account._id}`;
+
         const existingItem = updatedPriceList.get(customId);
+
+        console.log(updatedPriceList, customId, existingItem);
 
         if (existingItem) {
           if (existingItem.price !== newItem.price) {
+            console.log('exist & different price');
+
             updatedPriceList.set(customId, {
               ...existingItem,
               oldPrice: existingItem.price,
@@ -156,6 +167,7 @@ export class ProfileService {
             });
           }
         } else {
+          console.log('new');
           updatedPriceList.set(customId, newItem);
         }
       });
@@ -231,7 +243,7 @@ export class ProfileService {
     }
   }
 
-  public parseCsvWithSchema(content: Buffer, schemaConfig: SchemaConfig): ParsedItem[] {
+  public parseCsvWithSchema(content: Buffer | unknown[], schemaConfig: SchemaConfig): ParsedItem[] {
     const lines: string[] = content
       .toString('utf8')
       .split('\n')

@@ -4,7 +4,7 @@ import { CREDENTIALS, LOG_FORMAT, NODE_ENV, ORIGIN, PORT } from '@config';
 import { logger, stream } from '@utils/logger';
 
 import Container from 'typedi';
-import EmailFetcherService from './services/fetcher.service';
+import EmailFetcherService from './services/email.service';
 import { ErrorMiddleware } from '@middlewares/error.middleware';
 import { Routes } from '@interfaces/routes.interface';
 import compression from 'compression';

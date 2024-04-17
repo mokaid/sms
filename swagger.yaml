@@ -283,10 +283,6 @@ paths:
         500:
           description: Server Error
 
-
-    
-
-
   /accounts/{id}:
       put:
         tags:
@@ -481,6 +477,7 @@ paths:
             description: 'Conflict'
           500:
             description: 'Server Error'
+
   /profiles/{id}:
     get:
       tags:
@@ -538,6 +535,35 @@ paths:
           description: 'Conflict'
         500:
           description: 'Server Error'
+
+  /upload/priceList:
+    post:
+      tags:
+        - File Upload
+      summary: "Upload a price list Excel file"
+      description: "Allows users to upload a price list Excel file along with associated account ID. This endpoint accepts multipart/form-data content type."
+      consumes:
+        - multipart/form-data
+      produces:
+        - application/json
+      parameters:
+        - in: formData
+          name: file
+          type: file
+          description: The Excel file to upload.
+          required: true
+        - in: formData
+          name: accountId
+          type: string
+          description: The account ID associated with the price list file.
+          required: true
+      responses:
+        "200":
+          description: "Excel file processed successfully"
+        "400":
+          description: "Bad Request (e.g., no file uploaded or missing account ID)"
+        "500":
+          description: "Internal Server Error"
 
 
 definitions:

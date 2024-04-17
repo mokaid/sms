@@ -214,7 +214,7 @@ class AccountDetails {
 }
 
 class ConnectionDetails {
-  @prop({ type: String, required: true })
+  @prop({ type: String, required: true, unique: true, index: true })
   public userName: string;
 
   @prop({ type: String, required: true })
