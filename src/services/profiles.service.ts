@@ -132,49 +132,50 @@ export class ProfileService {
       throw new Error("Account not found in profile's accounts");
     }
 
-    // Initialize the price list if not present
     if (!account.Accounts[accountIndex].priceList) {
       account.Accounts[accountIndex].priceList = [];
     }
 
-    if (account.Accounts[accountIndex].emailCoverageList.deleteAllExisting) {
-      // If deleting all existing, filter and set the new items
-      account.Accounts[accountIndex].priceList = newPriceListItems.filter(this.isValidPriceListItem);
-    } else {
-      const updatedPriceList = new Map(account.Accounts[accountIndex].priceList.map(item => [item.customId, item]));
+    // Creating a map with existing price list items
+    const updatedPriceList = new Map(
+      account.Accounts[accountIndex].priceList.map(item => {
+        const key = `${item.MCC}${item.MNC}_${account._id}`;
+        console.log(`Mapping existing item with key: ${key}`, item);
+        return [key, item];
+      }),
+    );
 
-      newPriceListItems.forEach(newItem => {
-        if (!this.isValidPriceListItem(newItem)) return;
+    // Process each new price item
+    newPriceListItems.forEach(newItem => {
+      if (!this.isValidPriceListItem(newItem)) return;
 
-        const customId = `${newItem.MCC}${newItem.MNC}_${account._id}`;
+      const customId = `${newItem.MCC}${newItem.MNC}_${account._id}`;
+      console.log(`Processing new item with CustomId: ${customId}`, newItem);
+      const existingItem = updatedPriceList.get(customId);
 
-        const existingItem = updatedPriceList.get(customId);
-
-        console.log(updatedPriceList, customId, existingItem);
-
-        if (existingItem) {
-          if (existingItem.price !== newItem.price) {
-            console.log('exist & different price');
-
-            updatedPriceList.set(customId, {
-              ...existingItem,
-              oldPrice: existingItem.price,
-              price: newItem.price,
-              country: newItem.country,
-              MCC: newItem.MCC,
-              MNC: newItem.MNC,
-              customId: customId,
-            });
-          }
-        } else {
-          console.log('new');
-          updatedPriceList.set(customId, newItem);
+      if (existingItem) {
+        console.log('Existing item found, checking for updates...', existingItem);
+        if (existingItem.price !== newItem.price) {
+          console.log('Price change detected, updating item...');
+          updatedPriceList.set(customId, {
+            ...existingItem,
+            oldPrice: existingItem.price,
+            price: newItem.price,
+            country: newItem.country,
+            MCC: newItem.MCC,
+            MNC: newItem.MNC,
+            customId: customId,
+          });
         }
-      });
+      } else {
+        console.log('No existing item found, adding new...', newItem);
+        updatedPriceList.set(customId, newItem);
+      }
+    });
 
-      account.Accounts[accountIndex].priceList = Array.from(updatedPriceList.values());
-    }
-
+    // Update the account's price list with new/updated items
+    account.Accounts[accountIndex].priceList = Array.from(updatedPriceList.values());
+    console.log('Updated price list:', account.Accounts[accountIndex].priceList);
     await account.save();
   }
 

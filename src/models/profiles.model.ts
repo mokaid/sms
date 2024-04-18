@@ -281,7 +281,7 @@ class EmailCoveragelistDetails {
 }
 
 class PriceListItem {
-  @prop({ required: true, index: true, unique: true })
+  @prop({ required: true, index: true, unique: true, sparse: true })
   public customId: string;
 
   @prop({ required: true })
