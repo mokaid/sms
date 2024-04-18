@@ -295,7 +295,7 @@ paths:
             required: true
             schema:
               type: string
-            description: The ID of the account for which to update the price list.
+            description: The custom ID of the price item for which to update the price list.
           - name: body
             in: body
             description: Object containing the new price and/or currency.

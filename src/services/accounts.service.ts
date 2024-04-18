@@ -118,12 +118,7 @@ export class AccountService {
       throw new HttpException(400, 'No valid update data provided');
     }
 
-    const existingProfile = await ProfileModel.findOne(
-      {
-        'Accounts.priceList.customId': customId,
-      },
-      'Accounts.$',
-    );
+    const existingProfile = await ProfileModel.findOne({ 'Accounts.priceList.customId': customId }, 'Accounts.$');
 
     if (!existingProfile || !existingProfile.Accounts || !existingProfile.Accounts[0].priceList) {
       throw new HttpException(404, 'No valid account or price list found for the given ID');
@@ -135,20 +130,21 @@ export class AccountService {
     }
 
     const updateFields = {};
+    const arrayFilterConditions = { 'pl.customId': customId };
 
     if (newPriceData.price && newPriceData.price !== currentPriceList.price) {
-      updateFields['Accounts.$.priceList.0.oldPrice'] = currentPriceList.price;
-      updateFields['Accounts.$.priceList.0.price'] = newPriceData.price;
+      updateFields['Accounts.$[acc].priceList.$[pl].oldPrice'] = currentPriceList.price;
+      updateFields['Accounts.$[acc].priceList.$[pl].price'] = newPriceData.price;
     }
 
     if (newPriceData.currency) {
-      updateFields['Accounts.$.priceList.0.currency'] = newPriceData.currency;
+      updateFields['Accounts.$[acc].priceList.$[pl].currency'] = newPriceData.currency;
     }
 
     const updatedProfile = await ProfileModel.findOneAndUpdate(
       { 'Accounts.priceList.customId': customId },
       { $set: updateFields },
-      { new: true, arrayFilters: [{ 'Accounts.priceList.customId': customId }], runValidators: true },
+      { new: true, arrayFilters: [{ 'acc.priceList.customId': customId }, arrayFilterConditions], runValidators: true },
     );
 
     if (!updatedProfile) {

@@ -13,6 +13,8 @@ import {
 } from '@/enums/profiles.enums';
 import { Severity, getModelForClass, index, modelOptions, post, pre, prop } from '@typegoose/typegoose';
 
+import _ from 'lodash';
+
 class FieldConfig {
   @prop({ required: true })
   public headerRow: number;
@@ -27,6 +29,29 @@ class FieldConfig {
   };
 }
 
+@pre<Profile>('save', function (next) {
+  if (this.isNew) {
+    console.log('New Profile Added:', JSON.stringify(this));
+  } else {
+    console.log('Profile Updated:', JSON.stringify(this));
+  }
+  next();
+})
+// Adding Post Save Hook for deeper changes comparison
+@post<Profile>('save', function (doc) {
+  const changedFields = _.keys(doc.modifiedPaths());
+  const changes = _.pick(doc.toObject(), changedFields);
+  console.log(`Post Save - Changed Fields in Profile: ${JSON.stringify(changes)}`);
+})
+// Adding Pre Remove Hook for logging
+@pre<Profile>('remove', function (next) {
+  console.log('Removing Profile:', JSON.stringify(this));
+  next();
+})
+// Adding Post Remove Hook for logging
+@post<Profile>('remove', function (doc) {
+  console.log('Profile Removed:', JSON.stringify(doc));
+})
 class ProfileDetails {
   @prop({ type: String, required: true, maxlength: 255 })
   public legalName: string;
