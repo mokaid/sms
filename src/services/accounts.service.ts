@@ -77,31 +77,23 @@ export class AccountService {
       },
       {
         $project: {
-          priceList: {
-            customId: '$Accounts.priceList.customId',
-            country: '$Accounts.priceList.country',
-            MCC: '$Accounts.priceList.MCC',
-            MNC: '$Accounts.priceList.MNC',
-            price: '$Accounts.priceList.price',
-            currency: '$Accounts.priceList.currency',
-            name: '$Accounts.details.name',
-            accountProfile: '$Accounts.details.accountProfile',
-            userName: '$Accounts.connection.userName',
-            ipAddress: '$Accounts.connection.ipAddress',
-            email: '$Accounts.emailCoverageList.email',
-          },
+          customId: '$Accounts.priceList.customId',
+          country: '$Accounts.priceList.country',
+          MCC: '$Accounts.priceList.MCC',
+          MNC: '$Accounts.priceList.MNC',
+          price: '$Accounts.priceList.price',
+          currency: '$Accounts.priceList.currency',
+          name: '$Accounts.details.name',
+          accountProfile: '$Accounts.details.accountProfile',
+          userName: '$Accounts.connection.userName',
+          ipAddress: '$Accounts.connection.ipAddress',
+          email: '$Accounts.emailCoverageList.email',
           _id: 0,
         },
       },
-      { $sort: { [`priceList.${orderBy}`]: sortDirection } },
+      { $sort: { [orderBy]: sortDirection } },
       { $skip: skip },
       { $limit: limit },
-      {
-        $group: {
-          _id: null,
-          accounts: { $push: '$priceList' },
-        },
-      },
     ];
 
     const accountsPromise = ProfileModel.aggregate(pipeline).exec();

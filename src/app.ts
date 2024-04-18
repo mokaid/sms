@@ -15,6 +15,7 @@ import { dbConnection } from '@database';
 import express from 'express';
 import helmet from 'helmet';
 import hpp from 'hpp';
+import mongoose from 'mongoose';
 import morgan from 'morgan';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
@@ -61,6 +62,18 @@ class App {
 
   private async connectToDatabase() {
     await dbConnection();
+    this.watchDatabaseChanges();
+  }
+
+  private watchDatabaseChanges() {
+    const changeStream = mongoose.connection.collection('profiles').watch();
+    changeStream
+      .on('change', change => {
+        console.log('Changerrrr detected:', change);
+      })
+      .on('error', error => {
+        console.error('Change stream error:', error);
+      });
   }
 
   private initializeMiddlewares() {
