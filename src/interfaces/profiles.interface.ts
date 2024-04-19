@@ -12,7 +12,7 @@ import {
   PaymentType,
 } from '@/enums/profiles.enums';
 
-export interface Profile {
+export interface IProfile {
   _id?: string;
   SchemaConfig: {
     headerRow: number;

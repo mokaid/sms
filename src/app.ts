@@ -15,11 +15,13 @@ import { dbConnection } from '@database';
 import express from 'express';
 import helmet from 'helmet';
 import hpp from 'hpp';
+import { initializeModels } from './modelLoader';
 import mongoose from 'mongoose';
 import morgan from 'morgan';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 
+initializeModels();
 const events = ['SIGTERM', 'SIGINT', 'beforeExit', 'rejectionHandled', 'unhandledRejection', 'uncaughtException', 'exit'];
 events.forEach(eventName => {
   console.log('listening on ', eventName);
@@ -33,7 +35,6 @@ class App {
   public app: express.Application;
   public env: string;
   public port: string | number;
-
   constructor(routes: Routes[]) {
     this.app = express();
     this.env = NODE_ENV || 'development';
@@ -44,7 +45,7 @@ class App {
     this.initializeRoutes(routes);
     this.initializeSwagger();
     this.initializeErrorHandling();
-    this.initializeEmailFetcher();
+    //this.initializeEmailFetcher();
   }
 
   public listen() {

@@ -15,11 +15,11 @@ export class ProfileRoute implements Routes {
   }
 
   private initializeRoutes() {
-    this.router.get(`${this.path}`, AuthMiddleware, this.profile.getProfile);
-    this.router.get(`${this.path}/:id`, AuthMiddleware, this.profile.getProfileById);
+    // this.router.get(`${this.path}`, AuthMiddleware, this.profile.getProfile);
+    // this.router.get(`${this.path}/:id`, AuthMiddleware, this.profile.getProfileById);
     this.router.post(`${this.path}`, AuthMiddleware, ValidationMiddleware(ProfileDto), this.profile.createProfile);
-    this.router.put(`${this.path}/:id`, AuthMiddleware, ValidationMiddleware(ProfileDto, true), this.profile.updateProfile);
+    // this.router.put(`${this.path}/:id`, AuthMiddleware, ValidationMiddleware(ProfileDto, true), this.profile.updateProfile);
 
-    this.router.delete(`${this.path}/:id`, AuthMiddleware, this.profile.deleteProfile);
+    // this.router.delete(`${this.path}/:id`, AuthMiddleware, this.profile.deleteProfile);
   }
 }
