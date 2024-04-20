@@ -48,13 +48,14 @@ class App {
     //this.initializeEmailFetcher();
   }
 
-  public listen() {
+  public async listen() {
     this.app.listen(this.port, () => {
       logger.info(`=================================`);
       logger.info(`======= ENV: ${this.env} =======`);
       logger.info(`🚀 App listening on the port ${this.port}`);
       logger.info(`=================================`);
     });
+    await import('./modelLoader').then(module => module.initializeModels());
   }
 
   public getServer() {

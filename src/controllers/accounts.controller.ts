@@ -2,17 +2,17 @@ import { NextFunction, Request, Response } from 'express';
 
 import { AccountService } from '@/services/accounts.service';
 import { Container } from 'typedi';
-import { Profile } from '@/interfaces/profiles.interface';
+import { IProfile } from '@/interfaces/profiles.interface';
 
 export class AccountController {
   public account = Container.get(AccountService);
 
   public addPriceListItem = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const priceListData: Profile = req.body;
+      const priceListData: IProfile = req.body;
       const accountId: string = req.params.id;
 
-      const createPriceListData: Profile = await this.account.createPriceList(priceListData, accountId);
+      const createPriceListData = await this.account.createPriceList(priceListData, accountId);
 
       res.status(201).json({ data: createPriceListData, message: 'created' });
     } catch (error) {
@@ -28,39 +28,33 @@ export class AccountController {
       const sort = (req.query.sort as string) || 'asc';
 
       const price = req.query.price as string;
-      const priceCondition = (req.query.priceCondition as string) || 'eq'; // Can be 'gt', 'lt', 'eq'
-
+      const priceCondition = (req.query.priceCondition as string) || 'eq'; // 'gt', 'lt', 'eq'
       const oldPrice = req.query.oldPrice as string;
-      const oldPriceCondition = (req.query.oldPriceCondition as string) || 'eq'; // Can be 'gt', 'lt', 'eq'
-
+      const oldPriceCondition = (req.query.oldPriceCondition as string) || 'eq'; // 'gt', 'lt', 'eq'
       const country = req.query.country as string;
       const mnc = req.query.mnc as string;
       const mcc = req.query.mcc as string;
       const currency = req.query.currency as string;
 
-      const { accounts, totalAccounts } = await this.account.findAllAccountDetails(
+      // Use the aggregation framework
+      const { data, total } = await this.account.findAllAccountDetailsPopulate({
         page,
         limit,
         orderBy,
         sort,
-        price,
-        priceCondition,
-        oldPrice,
-        oldPriceCondition,
-        country,
-        mnc,
-        mcc,
-        currency,
-      );
+        filters: { price, priceCondition, oldPrice, oldPriceCondition, country, mnc, mcc, currency },
+      });
 
+      console.log(data);
       res.status(200).json({
-        data: accounts,
-        total: totalAccounts,
+        data: data,
+        total,
         page,
         limit,
-        message: 'findAll',
+        message: 'Accounts retrieved successfully',
       });
     } catch (error) {
+      console.error('Error fetching account details:', error);
       next(error);
     }
   };
@@ -81,9 +75,9 @@ export class AccountController {
   public deletePrice = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const customId: string = req.params.id;
-      const updatedProfile: Profile = await this.account.deletePrice(customId);
+      const deletedPrice: Profile = await this.account.deletePrice(customId);
 
-      res.status(200).json({ data: updatedProfile, message: 'Price entry deleted successfully' });
+      res.status(200).json({ data: deletedPrice, message: 'Price entry deleted successfully' });
     } catch (error) {
       next(error);
     }

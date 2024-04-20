@@ -1,5 +1,5 @@
 import { AccountCategory, AccountMode, AccountStatus, AccountType, BusinessType, ConnectionMode, Currency, FileFormat } from '@/enums/profiles.enums';
-import { Ref, prop } from '@typegoose/typegoose';
+import { Ref, Severity, modelOptions, prop } from '@typegoose/typegoose';
 
 import { PriceListItem } from './prices.model';
 import { Profile } from './profiles.model';
@@ -108,7 +108,7 @@ class EmailCoveragelistDetails {
   @prop({ type: Boolean, default: false })
   deleteAllExisting: boolean;
 }
-
+@modelOptions({ options: { allowMixed: Severity.ALLOW }, schemaOptions: { collection: 'accounts', timestamps: true } })
 export class Account {
   @prop({ ref: () => Profile, required: true })
   public profile: Ref<Profile>;
@@ -122,6 +122,6 @@ export class Account {
   @prop({ type: () => EmailCoveragelistDetails, _id: false, required: false })
   public emailCoverageList?: EmailCoveragelistDetails;
 
-  @prop({ type: () => [PriceListItem], default: [] })
-  public priceList: PriceListItem[];
+  @prop({ ref: () => PriceListItem })
+  public priceList: Ref<PriceListItem>[];
 }

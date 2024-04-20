@@ -429,7 +429,8 @@ export class ProfileDto {
   @Type(() => BankDto)
   Bank: BankDto;
 
+  @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => AccountDto)
-  Accounts: AccountDto[];
+  Accounts?: AccountDto[];
 }

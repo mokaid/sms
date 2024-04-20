@@ -1,14 +1,12 @@
-import { Ref, prop } from '@typegoose/typegoose';
+import { Ref, Severity, modelOptions, prop } from '@typegoose/typegoose';
 
 import { Account } from './accounts.model';
 import { Currency } from '@/enums/profiles.enums';
 
+@modelOptions({ options: { allowMixed: Severity.ALLOW }, schemaOptions: { collection: 'pricelistitems', timestamps: true } })
 export class PriceListItem {
   @prop({ ref: () => Account, required: true })
   public account: Ref<Account>;
-
-  @prop({ required: true, unique: true, sparse: true })
-  public customId: string;
 
   @prop({ required: true })
   public country: string;

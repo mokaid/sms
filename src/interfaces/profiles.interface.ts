@@ -121,7 +121,6 @@ export interface IProfile {
       deleteAllExisting: boolean;
     };
     priceList?: Array<{
-      customId: string;
       country: string;
       MCC: string;
       MNC: string;

@@ -1,170 +1,191 @@
-import { Document } from 'mongoose';
+import { Document, Model } from 'mongoose';
+import { Inject, Service } from 'typedi';
+
+import { Account } from '@/models/accounts.model';
 import { HttpException } from '@/exceptions/HttpException';
-import { Profile } from '@/interfaces/profiles.interface';
-import { ProfileModel } from '@/models/profiles.model';
-import { Service } from 'typedi';
+import { Mode } from 'fs';
+import { PriceListItem } from '@/models/prices.model';
+import { Profile } from '@/models/profiles.model';
+import { Container } from 'typedi';
 
 interface AccountDetail {
   accounts: Document[]; // Use appropriate document type
   totalAccounts: number;
 }
+Container.set('ProfileModel', Profile);
+Container.set('AccountModel', Account);
+Container.set('PriceListItemModel', PriceListItem);
 
 @Service()
 export class AccountService {
-  public async createPriceList(priceListData: any, accountId: string): Promise<Profile> {
+  constructor(
+    @Inject('ProfileModel') private profileModel: Model<Profile>,
+    @Inject('AccountModel') private accountModel: Model<Account>,
+    @Inject('PriceListItemModel') private priceListItemModel: Model<PriceListItem>,
+  ) {
+    if (!this.profileModel || !this.accountModel || !this.priceListItemModel) {
+      console.error('Dependency injection failed:', {
+        profileModel: !!this.profileModel,
+        accountModel: !!this.accountModel,
+        priceListItemModel: !!this.priceListItemModel,
+      });
+      throw new Error('Dependencies were not injected properly!');
+    }
+  }
+
+  public async createPriceList(priceListData: any, accountId: string): Promise<PriceListItem> {
     console.log(`Creating price list for account ID: ${accountId}`);
 
-    const customId = `${priceListData.MNC}${priceListData.MCC}_${accountId}`;
-    console.log(`Generated customId: ${customId}`);
+    const session = await this.profileModel.db.startSession();
+    session.startTransaction();
+    try {
+      const priceListItem = new this.priceListItemModel({
+        ...priceListData,
+        account: accountId,
+        currency: priceListData.currency || 'EUR',
+      });
 
-    const profile = await ProfileModel.findOneAndUpdate(
-      {
-        'Accounts._id': accountId,
-        'Accounts.priceList.customId': { $ne: customId },
-      },
-      {
-        $push: {
-          'Accounts.$.priceList': {
-            ...priceListData,
-            customId: customId,
-            currency: priceListData.currency || 'EUR',
-          },
-        },
-      },
-      { new: true, runValidators: true },
-    );
+      await priceListItem.save({ session });
+      console.log('PriceListItem created:', priceListItem);
 
-    if (!profile) {
-      const existingCustomId = await ProfileModel.findOne({ 'Accounts.priceList.customId': customId });
-      if (existingCustomId) {
-        throw new HttpException(400, 'CustomId already exists');
+      const accountUpdateResult = await this.accountModel
+        .findByIdAndUpdate(accountId, { $push: { priceList: priceListItem._id } }, { new: true, session: session })
+        .exec();
+
+      if (!accountUpdateResult) {
+        throw new HttpException(404, 'Account not found or update failed');
       }
-      throw new HttpException(404, 'Account not found or invalid customId');
-    }
 
-    return priceListData;
+      await session.commitTransaction();
+      session.endSession();
+      return priceListItem;
+    } catch (error) {
+      console.error('Error during price list creation:', error);
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
   }
 
-  public async findAllAccountDetails(
-    page: number,
-    limit: number,
-    orderBy: string,
-    sort: string,
-    price?: string,
-    priceCondition?: string,
-    oldPrice?: string,
-    oldPriceCondition?: string,
-    country?: string,
-    mnc?: string,
-    mcc?: string,
-    currency?: string,
-  ): Promise<AccountDetail> {
+  public async findAllAccountDetailsPopulate({ page = 1, limit = 10, orderBy = 'createdAt', sort = 'asc', filters = {} }) {
     const skip = (page - 1) * limit;
-    const sortDirection = sort === 'asc' ? 1 : -1;
+    const sortOrder = sort === 'asc' ? 1 : -1;
 
-    const pipeline: any[] = [
-      { $unwind: '$Accounts' },
-      { $unwind: '$Accounts.priceList' },
-      {
-        $match: {
-          ...(price !== undefined && price !== null && { 'Accounts.priceList.price': { [`$${priceCondition || 'eq'}`]: String(price).trim() } }),
-          ...(oldPrice !== undefined && { 'Accounts.priceList.oldPrice': { [`$${oldPriceCondition || 'eq'}`]: oldPrice } }),
-          ...(country && { 'Accounts.priceList.country': country }),
-          ...(mnc && { 'Accounts.priceList.MNC': mnc }),
-          ...(mcc && { 'Accounts.priceList.MCC': mcc }),
-          ...(currency && { 'Accounts.priceList.currency': currency }),
-        },
-      },
-      {
-        $project: {
-          customId: '$Accounts.priceList.customId',
-          country: '$Accounts.priceList.country',
-          MCC: '$Accounts.priceList.MCC',
-          MNC: '$Accounts.priceList.MNC',
-          price: '$Accounts.priceList.price',
-          currency: '$Accounts.priceList.currency',
-          name: '$Accounts.details.name',
-          accountProfile: '$Accounts.details.accountProfile',
-          userName: '$Accounts.connection.userName',
-          ipAddress: '$Accounts.connection.ipAddress',
-          email: '$Accounts.emailCoverageList.email',
-          _id: 0,
-        },
-      },
-      { $sort: { [orderBy]: sortDirection } },
-      { $skip: skip },
-      { $limit: limit },
-    ];
+    // Construct match conditions for price list filtering
+    const priceListMatch = {};
+    if (filters.price) priceListMatch.price = { ['$' + filters.priceCondition]: parseFloat(filters.price) };
+    if (filters.oldPrice) priceListMatch.oldPrice = { ['$' + filters.oldPriceCondition]: parseFloat(filters.oldPrice) };
+    if (filters.country) priceListMatch.country = filters.country;
+    if (filters.mnc) priceListMatch.MNC = filters.mnc;
+    if (filters.mcc) priceListMatch.MCC = filters.mcc;
+    if (filters.currency) priceListMatch.currency = filters.currency;
 
-    const accountsPromise = ProfileModel.aggregate(pipeline).exec();
-    const countPipeline = [...pipeline.slice(0, 4), { $count: 'totalPriceLists' }];
-    const countPromise = ProfileModel.aggregate(countPipeline).exec();
+    // Perform the query with pagination and sorting using the correct model
+    const query = this.priceListItemModel
+      .find(priceListMatch)
+      .populate({
+        path: 'account',
+        model: 'Account',
+        select: 'details.name details.accountType details.businessType', // Adjusted to correctly point to nested fields
+      })
+      .sort({ [orderBy]: sortOrder })
+      .skip(skip)
+      .limit(limit);
 
-    const [accounts, totalAccounts] = await Promise.all([accountsPromise, countPromise]);
+    // Execute the query to get price list items with account details
+    const priceListItems = await query.exec();
 
-    return { accounts, totalAccounts: totalAccounts[0] ? totalAccounts[0].totalPriceLists : 0 };
+    // Count the total matching price list items
+    const total = await this.priceListItemModel.countDocuments(priceListMatch);
+
+    // Return the formatted result
+
+    console.log(JSON.stringify(priceListItems));
+    return {
+      data: priceListItems.map(item => ({
+        ...item.toObject(), // Convert to a regular object if not already
+        account: item.account
+          ? {
+              name: item.account.details.name, // Accessing the nested fields
+              accountType: item.account.details.accountType,
+              businessType: item.account.details.businessType,
+              id: item.account._id, // Include the Account ID in the output
+            }
+          : null, // Handle cases where the account might not be found
+      })),
+      total,
+      page,
+      limit,
+    };
   }
 
-  public async updatePriceList(customId: string, newPriceData): Promise<Profile> {
-    if (!newPriceData.price && !newPriceData.currency) {
-      throw new HttpException(400, 'No valid update data provided');
+  public async deletePrice(customId: string) {
+    const session = await this.priceListItemModel.db.startSession();
+    session.startTransaction();
+    try {
+      // Delete the price list item from the PriceListItemModel
+      const deletedPrice = await this.priceListItemModel.findByIdAndDelete(customId, { session });
+      if (!deletedPrice) {
+        throw new Error('Price item not found');
+      }
+
+      // Update all accounts to remove the deleted price list item ID
+      const updatedAccounts = await this.accountModel.updateMany({ priceList: customId }, { $pull: { priceList: customId } }, { session });
+
+      // Commit the transaction and end the session
+      await session.commitTransaction();
+      session.endSession();
+
+      // Return the number of documents deleted and updated
+      return deletedPrice;
+    } catch (error) {
+      // Abort the transaction and end the session on error
+      await session.abortTransaction();
+      session.endSession();
+      console.error('Failed to delete price:', error);
+      throw error;
     }
-
-    const existingProfile = await ProfileModel.findOne({ 'Accounts.priceList.customId': customId }, 'Accounts.$');
-
-    if (!existingProfile || !existingProfile.Accounts || !existingProfile.Accounts[0].priceList) {
-      throw new HttpException(404, 'No valid account or price list found for the given ID');
-    }
-
-    const currentPriceList = existingProfile.Accounts[0].priceList.find(pl => pl.customId === customId);
-    if (!currentPriceList) {
-      throw new HttpException(404, 'Price list not found for the given customId');
-    }
-
-    const updateFields = {};
-    const arrayFilterConditions = { 'pl.customId': customId };
-
-    if (newPriceData.price && newPriceData.price !== currentPriceList.price) {
-      updateFields['Accounts.$[acc].priceList.$[pl].oldPrice'] = currentPriceList.price;
-      updateFields['Accounts.$[acc].priceList.$[pl].price'] = newPriceData.price;
-    }
-
-    if (newPriceData.currency) {
-      updateFields['Accounts.$[acc].priceList.$[pl].currency'] = newPriceData.currency;
-    }
-
-    const updatedProfile = await ProfileModel.findOneAndUpdate(
-      { 'Accounts.priceList.customId': customId },
-      { $set: updateFields },
-      { new: true, arrayFilters: [{ 'acc.priceList.customId': customId }, arrayFilterConditions], runValidators: true },
-    );
-
-    if (!updatedProfile) {
-      throw new HttpException(409, 'Unable to update price list');
-    }
-
-    return updatedProfile;
   }
 
-  public async deletePrice(customId: string): Promise<Profile> {
-    const profileContainingPrice = await ProfileModel.findOne({
-      'Accounts.priceList.customId': customId,
-    });
+  public async updatePriceList(customId: string, newPriceData): Promise<PriceListItem> {
+    const session = await this.priceListItemModel.db.startSession();
+    session.startTransaction();
+    try {
+      // Find the price list item by customId
+      const priceListItem = await this.priceListItemModel.findById(customId).session(session);
 
-    if (!profileContainingPrice) {
-      throw new HttpException(404, 'Profile containing the specified price not found');
+      if (!priceListItem) {
+        throw new HttpException(404, 'Price list not found for the given customId');
+      }
+
+      // Prepare update object and check what needs to be updated
+      const updates = {};
+      for (const [key, value] of Object.entries(newPriceData)) {
+        if (value !== priceListItem[key]) {
+          if (key === 'price') {
+            updates.oldPrice = priceListItem.price; // Set current price as oldPrice before updating
+          }
+          updates[key] = value;
+        }
+      }
+
+      // If there are updates, apply them
+      if (Object.keys(updates).length > 0) {
+        await this.priceListItemModel.updateOne({ _id: customId }, { $set: updates }, { session });
+      }
+
+      // Commit the transaction and end the session
+      await session.commitTransaction();
+      session.endSession();
+
+      // Return the updated price list item
+      return await this.priceListItemModel.findById(customId);
+    } catch (error) {
+      // Abort the transaction in case of an error
+      await session.abortTransaction();
+      session.endSession();
+      console.error('Failed to update price list:', error);
+      throw error; // Ensure that the error is thrown again to be caught by the caller
     }
-
-    const updatedProfile = await ProfileModel.findOneAndUpdate(
-      { 'Accounts.priceList.customId': customId },
-      { $pull: { 'Accounts.$.priceList': { customId: customId } } },
-      { new: true },
-    );
-
-    if (!updatedProfile) {
-      throw new HttpException(409, 'Failed to delete price entry');
-    }
-
-    return updatedProfile;
   }
 }

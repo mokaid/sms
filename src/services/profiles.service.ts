@@ -5,12 +5,13 @@ import { HttpException } from '@/exceptions/HttpException';
 import { ParsedMail } from 'mailparser';
 import { IProfile } from '@/interfaces/profiles.interface';
 import { ProfileDto } from '@/dtos/profiles.dto';
-import { Service, Inject } from 'typedi';
+import { Service, Inject, ContainerInstance } from 'typedi';
 import 'reflect-metadata';
 import { Model } from 'mongoose';
 import { Account } from '@/models/accounts.model';
 import { PriceListItem } from '@/models/prices.model';
 import { Profile } from '@/models/profiles.model';
+import { Container } from 'typedi';
 
 const xlsx = require('xlsx');
 
@@ -22,15 +23,14 @@ export class ProfileService {
     @Inject('PriceListItemModel') private priceListItemModel: Model<PriceListItem>,
   ) {}
 
-  public async createProfile(profileData: ProfileDto): Promise<Profile> {
+  public async createProfile(profileData): Promise<Profile> {
     const session = await this.profileModel.db.startSession();
     session.startTransaction();
     try {
-      // Checking for existing profile to prevent duplicates
       const existingProfile = await this.profileModel
         .findOne(
           {
-            'ProfileDetails.accountingReference': profileData.ProfileDetails.accountingReference,
+            'profileDetails.accountingReference': profileData.ProfileDetails.accountingReference,
           },
           null,
           { session },
@@ -43,13 +43,13 @@ export class ProfileService {
         throw new HttpException(409, 'This profile already exists');
       }
 
-      // Creating new profile
       const profile = new this.profileModel(profileData);
+
       await profile.save({ session });
       console.log('Created Profile with ID:', profile._id);
 
-      // Processing each account in the profile
       const accounts = profileData.Accounts.map(async accountData => {
+        console.log(accountData.connection.userName);
         if (accountData.details.accountType === 'Vendor') {
           if (!accountData.emailCoverageList) {
             throw new HttpException(400, 'Vendors must have an email coverage list.');
@@ -64,26 +64,199 @@ export class ProfileService {
 
         const account = new this.accountModel({
           ...accountData,
-          profile: profile._id, // Linking back to the newly created profile
+          profile: profile._id,
         });
         await account.save({ session });
         console.log('Account saved:', account);
-        return account._id; // Collecting saved accounts IDs for reference setting
+        return account._id;
       });
 
-      // Wait for all accounts to be processed and saved
       const savedAccountIds = await Promise.all(accounts);
-      profile.accounts = savedAccountIds; // Linking accounts to profile
-      await profile.save({ session }); // Saving the profile again with account references
+      profile.accounts = savedAccountIds;
+      await profile.save({ session });
 
       await session.commitTransaction();
       session.endSession();
       console.log('Transaction committed and session ended');
 
-      // Returning the full profile information with accounts populated
       return this.profileModel.findById(profile._id).populate('accounts').exec();
     } catch (error) {
       console.error('Error during profile creation:', error);
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
+  }
+
+  public async findAllProfile(
+    page: number,
+    limit: number,
+    orderBy: string,
+    sort: string,
+    searchTerm: string,
+  ): Promise<{ profiles: Profile[]; totalProfiles: number }> {
+    const skip = (page - 1) * limit;
+    const sortDirection = sort === 'asc' ? 1 : -1;
+
+    const searchableFields = [
+      'ProfileDetails.legalName',
+      'ProfileDetails.accountingReference',
+      'ProfileDetails.address',
+      'ProfileDetails.vatRegistrationNumber',
+      'ProfileDetails.phoneNumber',
+      'ProfileDetails.currency',
+    ];
+
+    const searchQuery = {
+      $or: searchableFields.map(field => ({
+        [field]: { $regex: searchTerm, $options: 'i' }, // Corrected: Options are now only specified here
+      })),
+    };
+
+    const profilesPromise = this.profileModel
+      .find(searchQuery)
+      .populate({
+        path: 'accounts',
+        populate: {
+          path: 'priceList',
+          model: 'PriceListItem', // Ensure this is the correct name of your price list model
+        },
+      })
+      .skip(skip)
+      .limit(limit)
+      .sort({ [orderBy]: sortDirection })
+      .exec();
+
+    const countPromise = this.profileModel.countDocuments(searchQuery);
+
+    const [profiles, totalProfiles] = await Promise.all([profilesPromise, countPromise]);
+    return { profiles, totalProfiles };
+  }
+
+  public async findProfileById(profileId: string): Promise<Profile> {
+    // Query to find the profile and populate nested documents
+    const profile = await this.profileModel
+      .findOne({ _id: profileId })
+      .populate({
+        path: 'accounts', // Assuming 'accounts' is the path in the Profile model to the Account documents
+        populate: {
+          path: 'priceList', // Assuming 'priceList' is the path in the Account model to the PriceListItem documents
+          model: 'PriceListItem', // Ensure this matches your PriceListItem model name
+        },
+      })
+      .exec();
+
+    if (!profile) {
+      throw new HttpException(409, "Profile doesn't exist");
+    }
+
+    return profile;
+  }
+
+  public async deleteProfile(profileId: string): Promise<Profile> {
+    const session = await this.profileModel.db.startSession();
+    session.startTransaction();
+    try {
+      // Attempt to delete the profile
+      const deleteProfileById = await this.profileModel.findByIdAndDelete(profileId, { session });
+      if (!deleteProfileById) {
+        throw new HttpException(409, "Profile doesn't exist");
+      }
+
+      // Fetch all account IDs related to the profile before deleting them
+      const relatedAccounts = await this.accountModel.find({ profile: profileId }, '_id', { session }).exec();
+      const accountIds = relatedAccounts.map(account => account._id);
+
+      // Delete all accounts linked to the profile
+      const accountsDeletion = await this.accountModel.deleteMany({ _id: { $in: accountIds } }, { session });
+      console.log(`${accountsDeletion.deletedCount} accounts deleted.`);
+
+      // Delete all price lists linked to the deleted accounts
+      const priceListsDeletion = await this.priceListItemModel.deleteMany({ account: { $in: accountIds } }, { session });
+      console.log(`${priceListsDeletion.deletedCount} price lists deleted.`);
+
+      // Commit transaction if all deletions were successful
+      await session.commitTransaction();
+      session.endSession();
+
+      return deleteProfileById;
+    } catch (error) {
+      // Rollback any changes made in the database if an error occurs
+      await session.abortTransaction();
+      session.endSession();
+      console.error('Failed to delete profile:', error);
+      throw error;
+    }
+  }
+
+  public async updateProfile(profileId: string, profileData): Promise<Profile> {
+    const session = await this.profileModel.db.startSession();
+    session.startTransaction();
+
+    try {
+      // Validate the non-existence of another profile with the same accounting reference
+      const existingProfile = await this.profileModel.findOne(
+        {
+          'ProfileDetails.accountingReference': profileData.ProfileDetails.accountingReference,
+          _id: { $ne: profileId },
+        },
+        null,
+        { session },
+      );
+
+      if (existingProfile) {
+        throw new HttpException(409, 'This profile already exists with the same accounting reference.');
+      }
+
+      // Update the main profile document
+      const updateProfileById = await this.profileModel.findByIdAndUpdate(profileId, { $set: profileData }, { new: true, session });
+
+      if (!updateProfileById) {
+        throw new HttpException(409, "Profile doesn't exist.");
+      }
+
+      // Handle accounts: Update or add new and remove unlinked
+      const existingAccounts = updateProfileById.accounts || [];
+      const updatedAccounts = [];
+
+      for (const accountData of profileData.Accounts) {
+        const existingAccount = await this.accountModel.findOne(
+          {
+            'connection.userName': accountData.connection.userName,
+            _id: { $ne: accountData._id },
+            profile: profileId,
+          },
+          null,
+          { session },
+        );
+
+        if (existingAccount && existingAccount._id.toString() !== accountData._id) {
+          throw new HttpException(409, `Username ${accountData.connection.userName} is already in use.`);
+        }
+
+        let savedAccount;
+        if (accountData._id && existingAccounts.includes(accountData._id.toString())) {
+          savedAccount = await this.accountModel.findByIdAndUpdate(accountData._id, accountData, { new: true, session });
+        } else {
+          savedAccount = await new this.accountModel({ ...accountData, profile: profileId }).save({ session });
+        }
+        updatedAccounts.push(savedAccount._id.toString());
+      }
+
+      // Remove accounts not in the updated list
+      const accountsToRemove = existingAccounts.filter(id => !updatedAccounts.includes(id.toString()));
+      await this.accountModel.deleteMany({ _id: { $in: accountsToRemove } }, { session });
+
+      // Update the profile's account list
+      await this.profileModel.findByIdAndUpdate(profileId, { $set: { accounts: updatedAccounts } }, { session });
+
+      // Remove any orphaned price lists linked to removed accounts
+      await this.priceListItemModel.deleteMany({ account: { $in: accountsToRemove } }, { session });
+
+      await session.commitTransaction();
+      session.endSession();
+      return updateProfileById;
+    } catch (error) {
       await session.abortTransaction();
       session.endSession();
       throw error;
@@ -93,28 +266,6 @@ export class ProfileService {
 
 // @Service()
 // export class ProfileService {
-//   public async createProfile(profileData: ProfileDto): Promise<Profile> {
-//     const findProfile: Profile = await ProfileModel.findOne({ 'ProfileDetails.accountingReference': profileData.ProfileDetails.accountingReference });
-//     if (findProfile) throw new HttpException(409, `This profile already exists`);
-
-//     profileData.Accounts.forEach(account => {
-//       if (account.details.accountType === 'Vendor') {
-//         if (!account.emailCoverageList) {
-//           throw new HttpException(400, 'Vendors must have an email coverage list.');
-//         }
-//         if (!account.connection.ipAddress) {
-//           throw new HttpException(400, 'Vendors must have an IP address.');
-//         }
-//         if (account.connection.port === undefined || account.connection.port === null) {
-//           throw new HttpException(400, 'Vendors must have a port.');
-//         }
-//       }
-//     });
-
-//     const createProfileData: Profile = await ProfileModel.create({ ...profileData });
-
-//     return createProfileData;
-//   }
 
 //   public async findAllProfile(
 //     page: number,
