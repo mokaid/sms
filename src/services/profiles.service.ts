@@ -213,6 +213,7 @@ export class ProfileService {
       const updatedAccounts = [];
 
       // console.log(profileData);
+
       for (const accountData of profileData.Accounts) {
         const existingAccount = await this.accountModel.findOne(
           {

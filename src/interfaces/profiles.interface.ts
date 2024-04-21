@@ -53,6 +53,7 @@ export interface IMT {
 
 // Interface for Invoice Details
 export interface IInvoice {
+  paymentTerm: string;
   billingTerm: string;
   paymentType: PaymentType;
   invoiceTemplate: InvoiceTemplate;

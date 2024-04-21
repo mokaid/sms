@@ -663,7 +663,7 @@ definitions:
           vatRegistrationNumber: 
             type: string
             description: Client's VAT registration number 
-          clientIPAddress:
+          clientIPAddresses:
             type: array
             items:
                 type: string

@@ -1,5 +1,5 @@
 import { AccountCategory, AccountMode, AccountStatus, AccountType, BusinessType, ConnectionMode, FileFormat } from '@/enums/accounts.enums';
-import { IsBoolean, IsEmail, IsEnum, IsIP, IsNumber, IsOptional, IsString, Length, ValidateNested } from 'class-validator';
+import { IsBoolean, IsEmail, IsEnum, IsIP, IsMongoId, IsNumber, IsOptional, IsString, Length, ValidateNested } from 'class-validator';
 
 import { Currency } from '@/enums/common.enums';
 import { ObjectId } from 'mongoose';
@@ -49,6 +49,7 @@ class EmailCoveragelistDetailsDto {
 }
 
 export class AccountDto {
+  @IsOptional() @IsMongoId({ each: true }) @Type(() => String) _id: string;
   @ValidateNested() @Type(() => AccountDetailsDto) details: AccountDetailsDto;
   @ValidateNested() @Type(() => ConnectionDetailsDto) connection: ConnectionDetailsDto;
   @ValidateNested() @Type(() => EmailCoveragelistDetailsDto) emailCoverageList?: EmailCoveragelistDetailsDto;
