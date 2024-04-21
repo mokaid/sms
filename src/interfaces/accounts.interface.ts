@@ -5,6 +5,7 @@ import { IPriceListDetails } from './prices.interface';
 
 // Interface for Account
 export interface IAccount {
+  _id?: string;
   details: IAccountDetails;
   connection: IConnectionDetails;
   emailCoverageList?: IEmailCoveragelistDetails;
