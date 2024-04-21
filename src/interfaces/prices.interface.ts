@@ -9,3 +9,14 @@ export interface IPriceListDetails {
   price: string;
   currency: Currency;
 }
+
+export interface AccountFilters {
+  price?: string;
+  priceCondition?: string;
+  oldPrice?: string;
+  oldPriceCondition?: string;
+  country?: string;
+  mnc?: string;
+  mcc?: string;
+  currency?: string;
+}

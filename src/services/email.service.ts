@@ -1,11 +1,11 @@
 import Container from 'typedi';
 import { EMAIL_CHECK_INTERVAL } from '@/config';
+import { IAccount } from '@/interfaces/accounts.interface';
+import Imap from 'imap';
 import { ProfileService } from './profiles.service';
+import { Service } from 'typedi';
 import { imapConfig } from '@/config/email';
 import { simpleParser } from 'mailparser';
-
-const Imap = require('imap');
-const { Service } = require('typedi');
 
 @Service()
 class EmailFetcherService {
@@ -49,7 +49,7 @@ class EmailFetcherService {
   }
 
   private async checkForNewEmails() {
-    this.openInbox(async (err, box) => {
+    this.openInbox(async err => {
       if (err) {
         console.error('Open Inbox Error:', err);
         return;
@@ -63,8 +63,8 @@ class EmailFetcherService {
         }
 
         const fetch = this.imap.fetch(results, { bodies: '', markSeen: true, struct: true });
-        fetch.on('message', (msg, seqno) => {
-          msg.on('body', (stream, info) => {
+        fetch.on('message', (msg: { on: (arg0: string, arg1: (stream: any, info: any) => void) => void }) => {
+          msg.on('body', stream => {
             simpleParser(stream, async (err, mail) => {
               if (err) {
                 console.error(err);
@@ -77,7 +77,7 @@ class EmailFetcherService {
                 const result = await this.profile.findRelevantAttachmentForAccount(profile.data?.accounts[0], mail);
 
                 if (result) {
-                  const csvContent = Buffer.from(result.attachment.content, 'base64');
+                  const csvContent = Buffer.from(String(result.attachment.content), 'base64');
 
                   const { deleteAllExisting } = profile.data.accounts[0].emailCoverageList;
 
@@ -92,7 +92,7 @@ class EmailFetcherService {
                   }));
 
                   await this.profile
-                    .updatePriceList(result.account._id, priceListItems, deleteAllExisting)
+                    .updatePriceList((result.account as IAccount & { _id: string })._id, priceListItems, deleteAllExisting)
                     .then(() => {
                       console.log('Price list updated successfully.');
                     })

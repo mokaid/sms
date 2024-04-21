@@ -35,7 +35,7 @@ export class PriceController {
       const mcc = req.query.mcc as string;
       const currency = req.query.currency as string;
 
-      const { data, total } = await this.price.findAllAccountDetailsPopulate({
+      const { data, total } = await this.price.findAllPricesDetailsPopulate({
         page,
         limit,
         orderBy,

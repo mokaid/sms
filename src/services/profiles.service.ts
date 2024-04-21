@@ -10,7 +10,8 @@ import { PriceListItem } from '@/models/prices.model';
 import { Profile } from '@/models/profiles.model';
 import { FileFormat } from '@/enums/accounts.enums';
 
-const xlsx = require('xlsx');
+import xlsx from 'xlsx';
+import { AccountDto } from '@/dtos/accounts.dto';
 
 @Service()
 export class ProfileService {
@@ -20,7 +21,7 @@ export class ProfileService {
     @Inject('PriceListItemModel') private priceListItemModel: Model<PriceListItem>,
   ) {}
 
-  public async createProfile(profileData): Promise<Profile> {
+  public async createProfile(profileData: { ProfileDetails: { accountingReference: string }; Accounts: AccountDto[] }): Promise<Profile> {
     const session = await this.profileModel.db.startSession();
     session.startTransaction();
     try {
@@ -180,7 +181,10 @@ export class ProfileService {
     }
   }
 
-  public async updateProfile(profileId: string, profileData): Promise<Profile> {
+  public async updateProfile(
+    profileId: string,
+    profileData: { ProfileDetails: { accountingReference: string }; Accounts: AccountDto[] },
+  ): Promise<Profile> {
     const session = await this.profileModel.db.startSession();
     session.startTransaction();
 
@@ -205,6 +209,7 @@ export class ProfileService {
       }
 
       const existingAccounts = updateProfileById.accounts || [];
+
       const updatedAccounts = [];
 
       for (const accountData of profileData.Accounts) {
@@ -222,8 +227,8 @@ export class ProfileService {
           throw new HttpException(409, `Username ${accountData.connection.userName} is already in use.`);
         }
 
-        let savedAccount;
-        if (accountData._id && existingAccounts.includes(accountData._id.toString())) {
+        let savedAccount: mongoose.Document<unknown, any, Account> & Omit<Account & { _id: mongoose.Types.ObjectId }, never>;
+        if (accountData._id && existingAccounts.includes(accountData._id as any)) {
           savedAccount = await this.accountModel.findByIdAndUpdate(accountData._id, accountData, { new: true, session });
         } else {
           savedAccount = await new this.accountModel({ ...accountData, profile: profileId }).save({ session });
@@ -333,7 +338,6 @@ export class ProfileService {
       } else {
         const priceMap = new Map(currentPrices.map(item => [item.MCC + '_' + item.MNC, item]));
 
-        console.log(priceMap);
         for (const item of newPriceListItems) {
           const key = item.MCC + '_' + item.MNC;
           const existingPrice = priceMap.get(key);

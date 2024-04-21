@@ -62,11 +62,11 @@ export class PriceService {
     }
   }
 
-  public async findAllAccountDetailsPopulate({ page = 1, limit = 10, orderBy = 'createdAt', sort = 'asc', filters = {} }) {
+  public async findAllPricesDetailsPopulate({ page = 1, limit = 10, orderBy = 'createdAt', sort = 'asc', filters }) {
     const skip = (page - 1) * limit;
     const sortOrder = sort === 'asc' ? 1 : -1;
 
-    const priceListMatch = {};
+    const priceListMatch: Record<string, any> = {};
     if (filters.price) priceListMatch.price = { ['$' + filters.priceCondition]: parseFloat(filters.price) };
     if (filters.oldPrice) priceListMatch.oldPrice = { ['$' + filters.oldPriceCondition]: parseFloat(filters.oldPrice) };
     if (filters.country) priceListMatch.country = filters.country;
@@ -79,7 +79,7 @@ export class PriceService {
       .populate({
         path: 'account',
         model: 'Account',
-        select: 'details.name details.accountType details.businessType', // Adjusted to correctly point to nested fields
+        select: 'details.name details.accountType details.businessType',
       })
       .sort({ [orderBy]: sortOrder })
       .skip(skip)
@@ -90,7 +90,7 @@ export class PriceService {
     const total = await this.priceListItemModel.countDocuments(priceListMatch);
 
     return {
-      data: priceListItems.map(item => ({
+      data: priceListItems.map((item: any) => ({
         ...item.toObject(),
         account: item.account
           ? {
@@ -140,7 +140,9 @@ export class PriceService {
         throw new HttpException(404, 'Price list not found for the given customId');
       }
 
-      const updates = {};
+      const updates: { oldPrice: string } = {
+        oldPrice: '',
+      };
       for (const [key, value] of Object.entries(newPriceData)) {
         if (value !== priceListItem[key]) {
           if (key === 'price') {
