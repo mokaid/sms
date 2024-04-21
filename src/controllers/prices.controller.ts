@@ -48,7 +48,7 @@ export class PriceController {
         total,
         page,
         limit,
-        message: 'Accounts retrieved successfully',
+        message: 'Prices retrieved successfully',
       });
     } catch (error) {
       console.error('Error fetching price details:', error);
