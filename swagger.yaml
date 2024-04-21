@@ -188,11 +188,11 @@ paths:
         500:
           description: 'Server Error'
   
-  /accounts:
+  /prices:
     get:
       tags:
-        - Accounts
-      summary: Find All Accounts
+        - Prices
+      summary: Find All Prices
       parameters:
         - in: query
           name: page
@@ -283,10 +283,10 @@ paths:
         500:
           description: Server Error
 
-  /accounts/{id}:
+  /prices/{id}:
       put:
         tags:
-          - Accounts
+          - Prices
         summary: Update Price List for an Account
         description: Updates the price list for a specific account. Only 'price' and 'currency' fields can be updated. If 'price' changes, 'oldPrice' will be updated to the previous price.
         parameters:
@@ -343,7 +343,7 @@ paths:
             description: Server error
       delete:
         tags:
-        - Accounts
+        - Prices
         summary: Delete Price By Id
         parameters:
         - name: id
@@ -359,7 +359,7 @@ paths:
             description: 'Server Error'
       post:
             tags:
-              - Accounts
+              - Prices
             summary: Add a Price List Item
             description: Add a new price list item to the specified account's price list.
             operationId: addPriceListItem
@@ -414,7 +414,7 @@ paths:
   /profiles:
       get:
         tags:
-          - Account Profiles
+          - Profiles
         summary: Find All Profiles
         parameters:
           - in: query
@@ -466,7 +466,7 @@ paths:
 
       post:
         tags:
-          - Account Profiles
+          - Profiles
         summary: Add Account Profile
         parameters:
           - name: body
@@ -488,7 +488,7 @@ paths:
   /profiles/{id}:
     get:
       tags:
-      - Account Profiles
+      - Profiles
       summary: Find Profile By Id
       parameters:
       - name: id
@@ -504,7 +504,7 @@ paths:
           description: 'Server Error'
     put:
       tags:
-      - Account Profiles
+      - Profiles
       summary: Update Proifle By Id
       parameters:
       - name: id
@@ -528,7 +528,7 @@ paths:
           description: 'Server Error'          
     delete:
       tags:
-      - Account Profiles
+      - Profiles
       summary: Delete Profile By Id
       parameters:
       - name: id
@@ -574,19 +574,6 @@ paths:
 
 
 definitions:
-  users:
-    type: object
-    required:
-        - email
-        - password
-    properties:
-      email:
-        type: string
-        description: user Email
-      password:
-        type: string
-        description: user Password
-
   User:
     type: object
     properties:

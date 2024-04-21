@@ -74,6 +74,7 @@ export class PriceService {
     if (filters.mcc) priceListMatch.MCC = filters.mcc;
     if (filters.currency) priceListMatch.currency = filters.currency;
 
+    console.log(priceListMatch);
     const query = this.priceListItemModel
       .find(priceListMatch)
       .populate({
