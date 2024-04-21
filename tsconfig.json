@@ -36,6 +36,6 @@
       "@utils/*": ["utils/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.json", ".env"],
+  "include": ["src/**/*.ts", "src/**/*.json", ".env", "src/controllers/prices.controller.ts"],
   "exclude": ["node_modules", "src/http", "src/logs"]
 }

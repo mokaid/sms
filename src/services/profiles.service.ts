@@ -1,17 +1,14 @@
 import { ParsedItem, SchemaConfig } from '@/interfaces/email.interface';
 
-import { FileFormat } from '@/enums/profiles.enums';
 import { HttpException } from '@/exceptions/HttpException';
 import { ParsedMail } from 'mailparser';
-import { IProfile } from '@/interfaces/profiles.interface';
-import { ProfileDto } from '@/dtos/profiles.dto';
-import { Service, Inject, ContainerInstance } from 'typedi';
+import { Service, Inject } from 'typedi';
 import 'reflect-metadata';
 import mongoose, { Model } from 'mongoose';
 import { Account } from '@/models/accounts.model';
 import { PriceListItem } from '@/models/prices.model';
 import { Profile } from '@/models/profiles.model';
-import { Container } from 'typedi';
+import { FileFormat } from '@/enums/accounts.enums';
 
 const xlsx = require('xlsx');
 
@@ -135,14 +132,13 @@ export class ProfileService {
   }
 
   public async findProfileById(profileId: string): Promise<Profile> {
-    // Query to find the profile and populate nested documents
     const profile = await this.profileModel
       .findOne({ _id: profileId })
       .populate({
-        path: 'accounts', // Assuming 'accounts' is the path in the Profile model to the Account documents
+        path: 'accounts',
         populate: {
-          path: 'priceList', // Assuming 'priceList' is the path in the Account model to the PriceListItem documents
-          model: 'PriceListItem', // Ensure this matches your PriceListItem model name
+          path: 'priceList',
+          model: 'PriceListItem',
         },
       })
       .exec();
@@ -158,31 +154,25 @@ export class ProfileService {
     const session = await this.profileModel.db.startSession();
     session.startTransaction();
     try {
-      // Attempt to delete the profile
       const deleteProfileById = await this.profileModel.findByIdAndDelete(profileId, { session });
       if (!deleteProfileById) {
         throw new HttpException(409, "Profile doesn't exist");
       }
 
-      // Fetch all account IDs related to the profile before deleting them
       const relatedAccounts = await this.accountModel.find({ profile: profileId }, '_id', { session }).exec();
       const accountIds = relatedAccounts.map(account => account._id);
 
-      // Delete all accounts linked to the profile
       const accountsDeletion = await this.accountModel.deleteMany({ _id: { $in: accountIds } }, { session });
       console.log(`${accountsDeletion.deletedCount} accounts deleted.`);
 
-      // Delete all price lists linked to the deleted accounts
       const priceListsDeletion = await this.priceListItemModel.deleteMany({ account: { $in: accountIds } }, { session });
       console.log(`${priceListsDeletion.deletedCount} price lists deleted.`);
 
-      // Commit transaction if all deletions were successful
       await session.commitTransaction();
       session.endSession();
 
       return deleteProfileById;
     } catch (error) {
-      // Rollback any changes made in the database if an error occurs
       await session.abortTransaction();
       session.endSession();
       console.error('Failed to delete profile:', error);
@@ -195,7 +185,6 @@ export class ProfileService {
     session.startTransaction();
 
     try {
-      // Validate the non-existence of another profile with the same accounting reference
       const existingProfile = await this.profileModel.findOne(
         {
           'ProfileDetails.accountingReference': profileData.ProfileDetails.accountingReference,
@@ -209,14 +198,12 @@ export class ProfileService {
         throw new HttpException(409, 'This profile already exists with the same accounting reference.');
       }
 
-      // Update the main profile document
       const updateProfileById = await this.profileModel.findByIdAndUpdate(profileId, { $set: profileData }, { new: true, session });
 
       if (!updateProfileById) {
         throw new HttpException(409, "Profile doesn't exist.");
       }
 
-      // Handle accounts: Update or add new and remove unlinked
       const existingAccounts = updateProfileById.accounts || [];
       const updatedAccounts = [];
 
@@ -244,14 +231,11 @@ export class ProfileService {
         updatedAccounts.push(savedAccount._id.toString());
       }
 
-      // Remove accounts not in the updated list
       const accountsToRemove = existingAccounts.filter(id => !updatedAccounts.includes(id.toString()));
       await this.accountModel.deleteMany({ _id: { $in: accountsToRemove } }, { session });
 
-      // Update the profile's account list
       await this.profileModel.findByIdAndUpdate(profileId, { $set: { accounts: updatedAccounts } }, { session });
 
-      // Remove any orphaned price lists linked to removed accounts
       await this.priceListItemModel.deleteMany({ account: { $in: accountsToRemove } }, { session });
 
       await session.commitTransaction();
@@ -265,38 +249,32 @@ export class ProfileService {
   }
 
   public async findProfileByAccountID(accountId: string): Promise<Profile> {
-    // Start a new session for this operation
     const session = await this.profileModel.db.startSession();
     session.startTransaction();
 
     try {
-      // Convert string ID to MongoDB ObjectID
       const objectId = new mongoose.Types.ObjectId(accountId);
 
-      // Attempt to find the profile by accountId, only return the first matching account
       const profile = await this.profileModel
         .findOne({ accounts: objectId })
         .populate({
           path: 'accounts',
           match: { _id: objectId },
-          select: 'details emailCoverageList connection SchemaConfig', // Specify fields you need
+          select: 'details emailCoverageList connection SchemaConfig',
         })
-        .select({ 'accounts.$': 1, SchemaConfig: 1 }) // Ensuring to fetch the matched account and schema config only
+        .select({ 'accounts.$': 1, SchemaConfig: 1 })
         .session(session)
         .exec();
       if (!profile) {
-        // If no profile is found, throw a custom error
         await session.abortTransaction();
         session.endSession();
         throw new Error('Profile not found for the given account ID');
       }
 
-      // If the profile is found, commit the transaction and end the session
       await session.commitTransaction();
       session.endSession();
-      return profile; // Return the found profile document
+      return profile;
     } catch (error) {
-      // If there is any error, abort the transaction, end the session and rethrow the error
       await session.abortTransaction();
       session.endSession();
       throw error;
@@ -336,31 +314,23 @@ export class ProfileService {
     try {
       const accountObjectId = new mongoose.Types.ObjectId(accountId);
 
-      // Fetch the current price list items for the account
       const currentPrices = await this.priceListItemModel.find({ account: accountObjectId }).session(session);
 
       if (deleteAllExisting) {
-        // Delete all existing price list items
         await this.priceListItemModel.deleteMany({ account: accountObjectId }, { session: session });
 
-        // Clear the priceList IDs in the Account document
         await this.accountModel.findByIdAndUpdate(accountId, { $set: { priceList: [] } }, { session: session });
 
-        // Insert new price list items
         const newItems = newPriceListItems.map(item => ({
           ...item,
           account: accountObjectId,
         }));
 
-        // console.log(newItems);
         const insertedItems = await this.priceListItemModel.insertMany(newItems, { session: session });
-        // console.log(insertedItems, '---');
 
-        // Update the account's priceList reference with new item IDs
         const newItemIds = insertedItems.map(item => item._id);
         await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: { $each: newItemIds } } }, { session: session });
       } else {
-        // Update existing items or add new ones
         const priceMap = new Map(currentPrices.map(item => [item.MCC + '_' + item.MNC, item]));
 
         console.log(priceMap);
@@ -369,20 +339,17 @@ export class ProfileService {
           const existingPrice = priceMap.get(key);
 
           if (existingPrice) {
-            // Update oldPrice if price has changed
             if (existingPrice.price !== item.price) {
               existingPrice.oldPrice = existingPrice.price;
               existingPrice.price = item.price;
               await existingPrice.save({ session: session });
             }
           } else {
-            // Insert new item
             const newItem = new this.priceListItemModel({
               ...item,
               account: accountObjectId,
             });
             await newItem.save({ session: session });
-            // Update the account's priceList to include the new item ID
             await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: newItem._id } }, { session: session });
           }
         }
@@ -401,18 +368,13 @@ export class ProfileService {
     try {
       session.startTransaction();
 
-      // Log the email for debugging purposes
-
-      // Find the account based on the email address
       const account = await this.accountModel.findOne({ 'emailCoverageList.email': accountEmail }).session(session).exec();
 
-      // If the account is not found, return an error in the structured response
       if (!account) {
         await session.endSession();
         return { success: false, error: 'Account not found for the given email' };
       }
 
-      // Find the profile associated with the account and populate specific fields from the account
       const objectId = new mongoose.Types.ObjectId(account._id);
 
       const profile = await this.profileModel
@@ -420,31 +382,31 @@ export class ProfileService {
         .populate({
           path: 'accounts',
           match: { _id: objectId },
-          select: 'details emailCoverageList connection ', // Specify fields you need
+          select: 'details emailCoverageList connection ',
         })
-        .select({ accounts: 1, SchemaConfig: 1 }) // Ensuring to fetch the matched account and schema config only
+        .select({ accounts: 1, SchemaConfig: 1 })
         .session(session)
         .exec();
 
-      // If no profile is found, return an error
       if (!profile) {
         await session.endSession();
         return { success: false, error: 'Profile not found for the given account' };
       }
 
-      // Commit the transaction and end the session successfully
       await session.commitTransaction();
       session.endSession();
       return { success: true, data: profile };
     } catch (error) {
-      // Handle any exceptions by aborting the transaction and ending the session
       await session.abortTransaction();
       session.endSession();
       return { success: false, error: error.message || 'Unknown error occurred' };
     }
   }
 
-  public async findRelevantAttachmentForAccount(account, mail: ParsedMail) {
+  public async findRelevantAttachmentForAccount(
+    account: { connection: { userName: string }; emailCoverageList: { partialFileName: string } },
+    mail: ParsedMail,
+  ) {
     if (!mail.attachments || mail.attachments.length === 0) {
       console.log('Email has no attachments, skipping.');
       return null;
@@ -454,19 +416,16 @@ export class ProfileService {
     const emailText = mail.text?.toLowerCase() || '';
     const username = account.connection.userName.toLowerCase();
 
-    // Check if the account's username is mentioned in the email subject or text
     if (!(emailSubject.includes(username) || emailText.includes(username))) {
       console.log('No relevant account information found in the email subject or body.');
       return null;
     }
 
-    // Try to find an attachment that matches the account's file format requirements and filename pattern
     let relevantAttachment = mail.attachments.find(attachment => {
       const isRelevantFormat = [FileFormat.CSV, FileFormat.XLS, FileFormat.XLSX].includes(attachment.contentType as FileFormat);
       return isRelevantFormat && attachment.filename.toLowerCase().includes(account.emailCoverageList.partialFileName.toLowerCase());
     });
 
-    // If no relevant attachment is found based on filename, check if any XLS/XLSX attachments contain relevant data
     if (!relevantAttachment) {
       relevantAttachment = mail.attachments.find(attachment => {
         if ([FileFormat.XLS, FileFormat.XLSX].includes(attachment.contentType as FileFormat)) {

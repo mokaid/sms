@@ -9,7 +9,13 @@ const { Service } = require('typedi');
 
 @Service()
 class EmailFetcherService {
-  private imap;
+  private imap: {
+    once: (arg0: string, arg1: any) => void;
+    connect: () => void;
+    openBox: (arg0: string, arg1: boolean, arg2: (err: Error, mailbox: any) => void) => void;
+    search: (arg0: string[], arg1: (err: any, results: any) => Promise<void>) => void;
+    fetch: (arg0: any, arg1: { bodies: string; markSeen: boolean; struct: boolean }) => any;
+  };
   public profile = Container.get(ProfileService);
 
   constructor() {

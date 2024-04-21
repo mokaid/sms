@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 
 import { Container } from 'typedi';
-import { IProfile } from '@/interfaces/profiles.interface';
 import { ProfileService } from '@/services/profiles.service';
 
 export class ProfleController {
@@ -25,7 +24,7 @@ export class ProfleController {
       const limit = parseInt(req.query.limit as string) || 10;
       const orderBy = (req.query.orderBy as string) || 'createdAt';
       const sort = (req.query.sort as string) || 'asc';
-      const searchTerm = (req.query.searchTerm as string) || ''; // Get search term from query parameters
+      const searchTerm = (req.query.searchTerm as string) || '';
 
       const { profiles, totalProfiles } = await this.profile.findAllProfile(page, limit, orderBy, sort, searchTerm);
 

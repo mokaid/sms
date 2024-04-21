@@ -1,23 +1,18 @@
-import { Document, Model } from 'mongoose';
+import { Model } from 'mongoose';
 import { Inject, Service } from 'typedi';
 
 import { Account } from '@/models/accounts.model';
 import { HttpException } from '@/exceptions/HttpException';
-import { Mode } from 'fs';
 import { PriceListItem } from '@/models/prices.model';
 import { Profile } from '@/models/profiles.model';
 import { Container } from 'typedi';
 
-interface AccountDetail {
-  accounts: Document[]; // Use appropriate document type
-  totalAccounts: number;
-}
 Container.set('ProfileModel', Profile);
 Container.set('AccountModel', Account);
 Container.set('PriceListItemModel', PriceListItem);
 
 @Service()
-export class AccountService {
+export class PriceService {
   constructor(
     @Inject('ProfileModel') private profileModel: Model<Profile>,
     @Inject('AccountModel') private accountModel: Model<Account>,
@@ -71,7 +66,6 @@ export class AccountService {
     const skip = (page - 1) * limit;
     const sortOrder = sort === 'asc' ? 1 : -1;
 
-    // Construct match conditions for price list filtering
     const priceListMatch = {};
     if (filters.price) priceListMatch.price = { ['$' + filters.priceCondition]: parseFloat(filters.price) };
     if (filters.oldPrice) priceListMatch.oldPrice = { ['$' + filters.oldPriceCondition]: parseFloat(filters.oldPrice) };
@@ -80,7 +74,6 @@ export class AccountService {
     if (filters.mcc) priceListMatch.MCC = filters.mcc;
     if (filters.currency) priceListMatch.currency = filters.currency;
 
-    // Perform the query with pagination and sorting using the correct model
     const query = this.priceListItemModel
       .find(priceListMatch)
       .populate({
@@ -92,26 +85,21 @@ export class AccountService {
       .skip(skip)
       .limit(limit);
 
-    // Execute the query to get price list items with account details
     const priceListItems = await query.exec();
 
-    // Count the total matching price list items
     const total = await this.priceListItemModel.countDocuments(priceListMatch);
 
-    // Return the formatted result
-
-    console.log(JSON.stringify(priceListItems));
     return {
       data: priceListItems.map(item => ({
-        ...item.toObject(), // Convert to a regular object if not already
+        ...item.toObject(),
         account: item.account
           ? {
-              name: item.account.details.name, // Accessing the nested fields
+              name: item.account.details.name,
               accountType: item.account.details.accountType,
               businessType: item.account.details.businessType,
-              id: item.account._id, // Include the Account ID in the output
+              id: item.account._id,
             }
-          : null, // Handle cases where the account might not be found
+          : null,
       })),
       total,
       page,
@@ -123,23 +111,18 @@ export class AccountService {
     const session = await this.priceListItemModel.db.startSession();
     session.startTransaction();
     try {
-      // Delete the price list item from the PriceListItemModel
       const deletedPrice = await this.priceListItemModel.findByIdAndDelete(customId, { session });
       if (!deletedPrice) {
         throw new Error('Price item not found');
       }
 
-      // Update all accounts to remove the deleted price list item ID
-      const updatedAccounts = await this.accountModel.updateMany({ priceList: customId }, { $pull: { priceList: customId } }, { session });
+      await this.accountModel.updateMany({ priceList: customId }, { $pull: { priceList: customId } }, { session });
 
-      // Commit the transaction and end the session
       await session.commitTransaction();
       session.endSession();
 
-      // Return the number of documents deleted and updated
       return deletedPrice;
     } catch (error) {
-      // Abort the transaction and end the session on error
       await session.abortTransaction();
       session.endSession();
       console.error('Failed to delete price:', error);
@@ -151,14 +134,12 @@ export class AccountService {
     const session = await this.priceListItemModel.db.startSession();
     session.startTransaction();
     try {
-      // Find the price list item by customId
       const priceListItem = await this.priceListItemModel.findById(customId).session(session);
 
       if (!priceListItem) {
         throw new HttpException(404, 'Price list not found for the given customId');
       }
 
-      // Prepare update object and check what needs to be updated
       const updates = {};
       for (const [key, value] of Object.entries(newPriceData)) {
         if (value !== priceListItem[key]) {
@@ -169,23 +150,19 @@ export class AccountService {
         }
       }
 
-      // If there are updates, apply them
       if (Object.keys(updates).length > 0) {
         await this.priceListItemModel.updateOne({ _id: customId }, { $set: updates }, { session });
       }
 
-      // Commit the transaction and end the session
       await session.commitTransaction();
       session.endSession();
 
-      // Return the updated price list item
       return await this.priceListItemModel.findById(customId);
     } catch (error) {
-      // Abort the transaction in case of an error
       await session.abortTransaction();
       session.endSession();
       console.error('Failed to update price list:', error);
-      throw error; // Ensure that the error is thrown again to be caught by the caller
+      throw error;
     }
   }
 }

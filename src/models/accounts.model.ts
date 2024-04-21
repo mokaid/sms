@@ -1,6 +1,7 @@
-import { AccountCategory, AccountMode, AccountStatus, AccountType, BusinessType, ConnectionMode, Currency, FileFormat } from '@/enums/profiles.enums';
+import { AccountCategory, AccountMode, AccountStatus, AccountType, BusinessType, ConnectionMode, FileFormat } from '@/enums/accounts.enums';
 import { Ref, Severity, modelOptions, prop } from '@typegoose/typegoose';
 
+import { Currency } from '@/enums/common.enums';
 import { PriceListItem } from './prices.model';
 import { Profile } from './profiles.model';
 
@@ -123,5 +124,5 @@ export class Account {
   public emailCoverageList?: EmailCoveragelistDetails;
 
   @prop({ ref: () => PriceListItem })
-  public priceList: Ref<PriceListItem>[];
+  public priceList?: Ref<PriceListItem>[];
 }

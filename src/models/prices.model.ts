@@ -1,7 +1,7 @@
 import { Ref, Severity, modelOptions, prop } from '@typegoose/typegoose';
 
 import { Account } from './accounts.model';
-import { Currency } from '@/enums/profiles.enums';
+import { Currency } from '@/enums/common.enums';
 
 @modelOptions({ options: { allowMixed: Severity.ALLOW }, schemaOptions: { collection: 'pricelistitems', timestamps: true } })
 export class PriceListItem {

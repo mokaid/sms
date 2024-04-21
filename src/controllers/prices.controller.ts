@@ -1,18 +1,17 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { AccountService } from '@/services/accounts.service';
 import { Container } from 'typedi';
-import { IProfile } from '@/interfaces/profiles.interface';
+import { PriceService } from '@/services/prices.service';
 
-export class AccountController {
-  public account = Container.get(AccountService);
+export class PriceController {
+  public price = Container.get(PriceService);
 
   public addPriceListItem = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const priceListData: IProfile = req.body;
+      const priceListData = req.body;
       const accountId: string = req.params.id;
 
-      const createPriceListData = await this.account.createPriceList(priceListData, accountId);
+      const createPriceListData = await this.price.createPriceList(priceListData, accountId);
 
       res.status(201).json({ data: createPriceListData, message: 'created' });
     } catch (error) {
@@ -36,8 +35,7 @@ export class AccountController {
       const mcc = req.query.mcc as string;
       const currency = req.query.currency as string;
 
-      // Use the aggregation framework
-      const { data, total } = await this.account.findAllAccountDetailsPopulate({
+      const { data, total } = await this.price.findAllAccountDetailsPopulate({
         page,
         limit,
         orderBy,
@@ -45,7 +43,6 @@ export class AccountController {
         filters: { price, priceCondition, oldPrice, oldPriceCondition, country, mnc, mcc, currency },
       });
 
-      console.log(data);
       res.status(200).json({
         data: data,
         total,
@@ -54,7 +51,7 @@ export class AccountController {
         message: 'Accounts retrieved successfully',
       });
     } catch (error) {
-      console.error('Error fetching account details:', error);
+      console.error('Error fetching price details:', error);
       next(error);
     }
   };
@@ -64,7 +61,7 @@ export class AccountController {
       const customId: string = req.params.id;
       const priceListData = req.body;
 
-      const updatePriceListData = await this.account.updatePriceList(customId, priceListData);
+      const updatePriceListData = await this.price.updatePriceList(customId, priceListData);
 
       res.status(200).json({ data: updatePriceListData, message: 'updated' });
     } catch (error) {
@@ -75,7 +72,7 @@ export class AccountController {
   public deletePrice = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const customId: string = req.params.id;
-      const deletedPrice = await this.account.deletePrice(customId);
+      const deletedPrice = await this.price.deletePrice(customId);
 
       res.status(200).json({ data: deletedPrice, message: 'Price entry deleted successfully' });
     } catch (error) {

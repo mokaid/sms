@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 
 import { Container, Service } from 'typedi';
+import { IAccount, IEmailCoveragelistDetails } from '@/interfaces/accounts.interface';
 
 import { HttpException } from '@/exceptions/HttpException';
 import { ProfileService } from './profiles.service';
@@ -16,14 +17,15 @@ export class UploadsService {
       const worksheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[worksheetName];
       const csvContent = XLSX.utils.sheet_to_csv(worksheet, { FS: ',', RS: '\n' });
-      console.log(accountId);
 
       const profile = await this.profileService.findProfileByAccountID(accountId);
       if (!profile) {
         throw new HttpException(404, 'Profile not found');
       }
 
-      const { deleteAllExisting } = profile.accounts[0].emailCoverageList;
+      const account = profile.accounts[0] as IAccount & { emailCoverageList: IEmailCoveragelistDetails };
+      const { deleteAllExisting } = account.emailCoverageList;
+
       const parsedData = this.profileService.parseCsvWithSchema(Buffer.from(csvContent, 'utf8'), profile.SchemaConfig);
 
       const priceListItems = parsedData.map(item => ({
@@ -39,7 +41,7 @@ export class UploadsService {
         .then(() => {
           console.log('Price list updated successfully.');
         })
-        .catch(err => {
+        .catch(() => {
           throw new HttpException(500, 'Failed to update price list');
         });
 

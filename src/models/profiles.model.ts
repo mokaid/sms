@@ -1,7 +1,8 @@
-import { ClassificationLevel, Currency, InvoiceTemplate, PaymentType } from '@/enums/profiles.enums';
+import { ClassificationLevel, InvoiceTemplate, PaymentType } from '@/enums/profiles.enums';
 import { Ref, Severity, modelOptions, prop } from '@typegoose/typegoose';
 
 import { Account } from './accounts.model';
+import { Currency } from '@/enums/common.enums';
 
 class FieldConfig {
   @prop({ required: true })
