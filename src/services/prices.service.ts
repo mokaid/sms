@@ -3,13 +3,9 @@ import { Inject, Service } from 'typedi';
 
 import { Account } from '@/models/accounts.model';
 import { HttpException } from '@/exceptions/HttpException';
-import { PriceListItem } from '@/models/prices.model';
 import { Profile } from '@/models/profiles.model';
-import { Container } from 'typedi';
-
-Container.set('ProfileModel', Profile);
-Container.set('AccountModel', Account);
-Container.set('PriceListItemModel', PriceListItem);
+import { PriceListItem } from '@/models/prices.model';
+import { Currency } from '@/enums/common.enums';
 
 @Service()
 export class PriceService {
@@ -25,10 +21,12 @@ export class PriceService {
         priceListItemModel: !!this.priceListItemModel,
       });
       throw new Error('Dependencies were not injected properly!');
+    } else {
+      console.log('loaded');
     }
   }
 
-  public async createPriceList(priceListData: any, accountId: string): Promise<PriceListItem> {
+  public async createPriceList(priceListData: { currency: Currency }, accountId: string): Promise<PriceListItem> {
     console.log(`Creating price list for account ID: ${accountId}`);
 
     const session = await this.profileModel.db.startSession();
