@@ -1,5 +1,19 @@
 import { ClassificationLevel, InvoiceTemplate, IpVersion, PaymentType } from '@/enums/profiles.enums';
-import { IsBoolean, IsEmail, IsEnum, IsIP, IsNumber, IsOptional, IsPositive, IsString, Length, Max, Min, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsEmail,
+  IsEnum,
+  IsIP,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  Length,
+  Max,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 import { AccountDto } from './accounts.dto';
 import { Currency } from '@/enums/common.enums';
@@ -64,6 +78,37 @@ class BankDto {
   @IsOptional() @IsString() phoneNumber?: string;
   @IsString() accountNumber: string;
 }
+class FieldsDto {
+  @IsArray()
+  @IsString({ each: true })
+  country: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  MCC: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  MNC: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  price: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  currency: string[];
+}
+
+class FieldConfigDto {
+  @IsNumber()
+  @Min(1)
+  headerRow: number;
+
+  @ValidateNested()
+  @Type(() => FieldsDto)
+  fields: FieldsDto;
+}
 
 export class ProfileDto {
   @ValidateNested() @Type(() => ProfileDetailsDto) ProfileDetails: ProfileDetailsDto;
@@ -71,5 +116,6 @@ export class ProfileDto {
   @ValidateNested() @Type(() => MTDto) MT: MTDto;
   @ValidateNested() @Type(() => InvoiceDto) Invoice: InvoiceDto;
   @ValidateNested() @Type(() => BankDto) Bank: BankDto;
-  @IsOptional() @ValidateNested({ each: true }) @Type(() => AccountDto) Accounts?: AccountDto;
+  @ValidateNested() @Type(() => FieldConfigDto) SchemaConfig: FieldConfigDto;
+  @IsOptional() @ValidateNested({ each: true }) @Type(() => AccountDto) Accounts?: AccountDto[];
 }

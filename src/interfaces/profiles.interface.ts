@@ -69,6 +69,17 @@ export interface IBank {
   accountNumber: string;
 }
 
+interface ISchemaConfig {
+  headerRow: number;
+  fields: {
+    country: string[];
+    MCC: string[];
+    MNC: string[];
+    price: string[];
+    currency: string[];
+  };
+}
+
 // Main Profile Interface
 export interface IProfile {
   ProfileDetails: IProfileDetails;
@@ -76,5 +87,6 @@ export interface IProfile {
   MT: IMT;
   Invoice: IInvoice;
   Bank: IBank;
+  SchemaConfig: ISchemaConfig;
   Accounts?: IAccount[];
 }
