@@ -28,7 +28,7 @@ export class ProfileService {
       const existingProfile = await this.profileModel
         .findOne(
           {
-            'profileDetails.accountingReference': profileData.ProfileDetails.accountingReference,
+            'ProfileDetails.accountingReference': profileData.ProfileDetails.accountingReference,
           },
           null,
           { session },
@@ -212,6 +212,7 @@ export class ProfileService {
 
       const updatedAccounts = [];
 
+      // console.log(profileData);
       for (const accountData of profileData.Accounts) {
         const existingAccount = await this.accountModel.findOne(
           {
