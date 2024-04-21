@@ -62,9 +62,9 @@ export class AccountController {
   public updatePriceList = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const customId: string = req.params.id;
-      const priceListData: Profile = req.body;
+      const priceListData = req.body;
 
-      const updatePriceListData: Profile = await this.account.updatePriceList(customId, priceListData);
+      const updatePriceListData = await this.account.updatePriceList(customId, priceListData);
 
       res.status(200).json({ data: updatePriceListData, message: 'updated' });
     } catch (error) {
@@ -75,7 +75,7 @@ export class AccountController {
   public deletePrice = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const customId: string = req.params.id;
-      const deletedPrice: Profile = await this.account.deletePrice(customId);
+      const deletedPrice = await this.account.deletePrice(customId);
 
       res.status(200).json({ data: deletedPrice, message: 'Price entry deleted successfully' });
     } catch (error) {

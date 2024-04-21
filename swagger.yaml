@@ -306,13 +306,20 @@ paths:
               properties:
                 price:
                   type: string
-                  description: New price to update. Required if 'currency' is not provided.
+                  description: New price to update. This field is required if 'currency' is not provided.
                 currency:
                   type: string
-                  description: Currency for the new price. Required if 'price' is not provided.
-              example:
-                price: "100.00"
-                currency: "USD"
+                  description: Currency for the new price. This field is required if 'price' is not provided.
+                MCC:
+                  type: string
+                  description: Mobile Country Code. This code identifies the country of the mobile subscriber. It is required for defining the geographical context of the price.
+                MNC:
+                  type: string
+                  description: Mobile Network Code. This code identifies the mobile network within the specified country (MCC). It is essential for pinpointing the exact mobile operator the price update applies to.
+                country:
+                  type: string
+                  description: Country name. This should be the full name of the country where the price change applies. It provides an additional geographical context alongside MCC.
+
         responses:
           200:
             description: Price list updated successfully

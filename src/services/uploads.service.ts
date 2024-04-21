@@ -16,25 +16,26 @@ export class UploadsService {
       const worksheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[worksheetName];
       const csvContent = XLSX.utils.sheet_to_csv(worksheet, { FS: ',', RS: '\n' });
+      console.log(accountId);
 
       const profile = await this.profileService.findProfileByAccountID(accountId);
       if (!profile) {
         throw new HttpException(404, 'Profile not found');
       }
 
+      const { deleteAllExisting } = profile.accounts[0].emailCoverageList;
       const parsedData = this.profileService.parseCsvWithSchema(Buffer.from(csvContent, 'utf8'), profile.SchemaConfig);
 
       const priceListItems = parsedData.map(item => ({
-        customId: `${item.MCC}${item.MNC}_${accountId}`,
-        country: item.country || '_',
-        MCC: item.MCC || '_',
-        MNC: item.MNC || '_',
+        country: item.country,
+        MCC: item.MCC,
+        MNC: item.MNC,
         price: item.price,
         currency: item.currency,
       }));
 
       await this.profileService
-        .updatePriceList(accountId, priceListItems)
+        .updatePriceList(accountId, priceListItems, deleteAllExisting)
         .then(() => {
           console.log('Price list updated successfully.');
         })

@@ -7,7 +7,7 @@ import { IProfile } from '@/interfaces/profiles.interface';
 import { ProfileDto } from '@/dtos/profiles.dto';
 import { Service, Inject, ContainerInstance } from 'typedi';
 import 'reflect-metadata';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { Account } from '@/models/accounts.model';
 import { PriceListItem } from '@/models/prices.model';
 import { Profile } from '@/models/profiles.model';
@@ -262,243 +262,226 @@ export class ProfileService {
       throw error;
     }
   }
+
+  public async findProfileByAccountID(accountId: string): Promise<Profile> {
+    // Start a new session for this operation
+    const session = await this.profileModel.db.startSession();
+    session.startTransaction();
+
+    try {
+      // Convert string ID to MongoDB ObjectID
+      const objectId = new mongoose.Types.ObjectId(accountId);
+
+      // Attempt to find the profile by accountId, only return the first matching account
+      const profile = await this.profileModel
+        .findOne({ accounts: objectId })
+        .populate({
+          path: 'accounts',
+          match: { _id: objectId },
+          select: 'details emailCoverageList connection SchemaConfig', // Specify fields you need
+        })
+        .select({ 'accounts.$': 1, SchemaConfig: 1 }) // Ensuring to fetch the matched account and schema config only
+        .session(session)
+        .exec();
+      if (!profile) {
+        // If no profile is found, throw a custom error
+        await session.abortTransaction();
+        session.endSession();
+        throw new Error('Profile not found for the given account ID');
+      }
+
+      // If the profile is found, commit the transaction and end the session
+      await session.commitTransaction();
+      session.endSession();
+      return profile; // Return the found profile document
+    } catch (error) {
+      // If there is any error, abort the transaction, end the session and rethrow the error
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
+  }
+
+  public parseCsvWithSchema(content: Buffer | unknown[], schemaConfig: SchemaConfig): ParsedItem[] {
+    const lines: string[] = content
+      .toString('utf8')
+      .split('\n')
+      .filter(line => line.trim() !== '');
+    const headers: string[] = lines[schemaConfig.headerRow - 1].split(',').map(header => header.trim().replace(/^"|"$/g, ''));
+
+    const columnIndexMap: { [key: string]: number } = {};
+    Object.entries(schemaConfig.fields).forEach(([fieldName, possibleHeaders]) => {
+      columnIndexMap[fieldName] = headers.findIndex(header => possibleHeaders.some(possibleHeader => possibleHeader === header));
+    });
+
+    return lines.slice(schemaConfig.headerRow).map(line => {
+      const data = line.split(',').map(cell => cell.trim().replace(/^"|"$/g, ''));
+      const obj: Partial<ParsedItem> = {};
+      Object.entries(columnIndexMap).forEach(([fieldName, index]) => {
+        if (index >= 0) {
+          obj[fieldName as keyof ParsedItem] = data[index];
+        }
+      });
+
+      if (!obj.currency) obj.currency = 'EUR';
+
+      return obj as ParsedItem;
+    });
+  }
+
+  public async updatePriceList(accountId: string, newPriceListItems: any[], deleteAllExisting: boolean): Promise<void> {
+    const session = await this.priceListItemModel.db.startSession();
+    session.startTransaction();
+    try {
+      const accountObjectId = new mongoose.Types.ObjectId(accountId);
+
+      // Fetch the current price list items for the account
+      const currentPrices = await this.priceListItemModel.find({ account: accountObjectId }).session(session);
+
+      if (deleteAllExisting) {
+        // Delete all existing price list items
+        await this.priceListItemModel.deleteMany({ account: accountObjectId }, { session: session });
+
+        // Clear the priceList IDs in the Account document
+        await this.accountModel.findByIdAndUpdate(accountId, { $set: { priceList: [] } }, { session: session });
+
+        // Insert new price list items
+        const newItems = newPriceListItems.map(item => ({
+          ...item,
+          account: accountObjectId,
+        }));
+
+        // console.log(newItems);
+        const insertedItems = await this.priceListItemModel.insertMany(newItems, { session: session });
+        // console.log(insertedItems, '---');
+
+        // Update the account's priceList reference with new item IDs
+        const newItemIds = insertedItems.map(item => item._id);
+        await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: { $each: newItemIds } } }, { session: session });
+      } else {
+        // Update existing items or add new ones
+        const priceMap = new Map(currentPrices.map(item => [item.MCC + '_' + item.MNC, item]));
+
+        console.log(priceMap);
+        for (const item of newPriceListItems) {
+          const key = item.MCC + '_' + item.MNC;
+          const existingPrice = priceMap.get(key);
+
+          if (existingPrice) {
+            // Update oldPrice if price has changed
+            if (existingPrice.price !== item.price) {
+              existingPrice.oldPrice = existingPrice.price;
+              existingPrice.price = item.price;
+              await existingPrice.save({ session: session });
+            }
+          } else {
+            // Insert new item
+            const newItem = new this.priceListItemModel({
+              ...item,
+              account: accountObjectId,
+            });
+            await newItem.save({ session: session });
+            // Update the account's priceList to include the new item ID
+            await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: newItem._id } }, { session: session });
+          }
+        }
+      }
+
+      await session.commitTransaction();
+      session.endSession();
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
+  }
+  public async findProfileByAccountEmail(accountEmail: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    const session = await this.profileModel.db.startSession();
+    try {
+      session.startTransaction();
+
+      // Log the email for debugging purposes
+
+      // Find the account based on the email address
+      const account = await this.accountModel.findOne({ 'emailCoverageList.email': accountEmail }).session(session).exec();
+
+      // If the account is not found, return an error in the structured response
+      if (!account) {
+        await session.endSession();
+        return { success: false, error: 'Account not found for the given email' };
+      }
+
+      // Find the profile associated with the account and populate specific fields from the account
+      const objectId = new mongoose.Types.ObjectId(account._id);
+
+      const profile = await this.profileModel
+        .findById(account.profile)
+        .populate({
+          path: 'accounts',
+          match: { _id: objectId },
+          select: 'details emailCoverageList connection ', // Specify fields you need
+        })
+        .select({ accounts: 1, SchemaConfig: 1 }) // Ensuring to fetch the matched account and schema config only
+        .session(session)
+        .exec();
+
+      // If no profile is found, return an error
+      if (!profile) {
+        await session.endSession();
+        return { success: false, error: 'Profile not found for the given account' };
+      }
+
+      // Commit the transaction and end the session successfully
+      await session.commitTransaction();
+      session.endSession();
+      return { success: true, data: profile };
+    } catch (error) {
+      // Handle any exceptions by aborting the transaction and ending the session
+      await session.abortTransaction();
+      session.endSession();
+      return { success: false, error: error.message || 'Unknown error occurred' };
+    }
+  }
+
+  public async findRelevantAttachmentForAccount(account, mail: ParsedMail) {
+    if (!mail.attachments || mail.attachments.length === 0) {
+      console.log('Email has no attachments, skipping.');
+      return null;
+    }
+
+    const emailSubject = mail.subject?.toLowerCase() || '';
+    const emailText = mail.text?.toLowerCase() || '';
+    const username = account.connection.userName.toLowerCase();
+
+    // Check if the account's username is mentioned in the email subject or text
+    if (!(emailSubject.includes(username) || emailText.includes(username))) {
+      console.log('No relevant account information found in the email subject or body.');
+      return null;
+    }
+
+    // Try to find an attachment that matches the account's file format requirements and filename pattern
+    let relevantAttachment = mail.attachments.find(attachment => {
+      const isRelevantFormat = [FileFormat.CSV, FileFormat.XLS, FileFormat.XLSX].includes(attachment.contentType as FileFormat);
+      return isRelevantFormat && attachment.filename.toLowerCase().includes(account.emailCoverageList.partialFileName.toLowerCase());
+    });
+
+    // If no relevant attachment is found based on filename, check if any XLS/XLSX attachments contain relevant data
+    if (!relevantAttachment) {
+      relevantAttachment = mail.attachments.find(attachment => {
+        if ([FileFormat.XLS, FileFormat.XLSX].includes(attachment.contentType as FileFormat)) {
+          const workbook = xlsx.read(attachment.content, { type: 'buffer' });
+          return workbook.SheetNames.some(sheetName => sheetName.toLowerCase().includes(username));
+        }
+        return false;
+      });
+    }
+
+    if (relevantAttachment) {
+      console.log('Relevant attachment found:', relevantAttachment.filename);
+      return { account, attachment: relevantAttachment };
+    } else {
+      console.log('No relevant attachments found.');
+      return null;
+    }
+  }
 }
-
-// @Service()
-// export class ProfileService {
-
-//   public async findAllProfile(
-//     page: number,
-//     limit: number,
-//     orderBy: string,
-//     sort: string,
-//     searchTerm: string,
-//   ): Promise<{ profiles: Profile[]; totalProfiles: number }> {
-//     const skip = (page - 1) * limit;
-//     const regex = new RegExp(searchTerm, 'i');
-//     const sortDirection = sort === 'asc' ? 1 : -1;
-
-//     const searchableFields = ['legalName', 'accountingReference', 'address', 'vatRegistrationNumber', 'phoneNumber', 'currency'];
-
-//     const searchQuery = {
-//       $or: searchableFields.map(field => ({ [`ProfileDetails.${field}`]: { $regex: regex } })),
-//     };
-
-//     const profilesPromise = ProfileModel.find(searchQuery, { 'Accounts.priceList': 0 })
-//       .skip(skip)
-//       .limit(limit)
-//       .sort({ [orderBy]: sortDirection });
-
-//     const countPromise = ProfileModel.countDocuments(searchQuery);
-
-//     const [profiles, totalProfiles] = await Promise.all([profilesPromise, countPromise]);
-//     return { profiles, totalProfiles };
-//   }
-
-//   public async findProfileById(profileId: string): Promise<Profile> {
-//     const findProfiler: Profile = await ProfileModel.findOne({ _id: profileId });
-//     if (!findProfiler) throw new HttpException(409, "Profile doesn't exist");
-
-//     return findProfiler;
-//   }
-
-//   public async findProfileByAccountEmail(accountEmail: string): Promise<Profile> {
-//     const findProfile: Profile = await ProfileModel.findOne({ 'Accounts.emailCoverageList.email': accountEmail }, { 'Accounts.priceList': 0 });
-
-//     return findProfile;
-//   }
-
-//   public async findProfileByAccountID(accountId: string): Promise<Profile> {
-//     const findProfile: Profile = await ProfileModel.findOne({ 'Accounts._id': accountId }, { 'Accounts.priceList': 0 });
-
-//     return findProfile;
-//   }
-
-//   public async updateProfile(profileId: string, profileData: ProfileDto): Promise<Profile> {
-//     if (profileData.ProfileDetails.accountingReference) {
-//       const findProfile: Profile = await ProfileModel.findOne(
-//         {
-//           'ProfileDetails.accountingReference': profileData.ProfileDetails.accountingReference,
-//         },
-//         { 'Accounts.priceList': 0 },
-//       );
-//       if (findProfile && findProfile._id != profileId) throw new HttpException(409, `This profile already exists`);
-//     }
-
-//     profileData.Accounts.forEach(account => {
-//       if (account.details.accountType === 'Vendor') {
-//         if (!account.emailCoverageList) {
-//           throw new HttpException(400, 'Vendors must have an email coverage list.');
-//         }
-//         if (!account.connection.ipAddress) {
-//           throw new HttpException(400, 'Vendors must have an IP address.');
-//         }
-//         if (account.connection.port === undefined || account.connection.port === null) {
-//           throw new HttpException(400, 'Vendors must have a port.');
-//         }
-//       }
-//     });
-
-//     const updateProfileById: Profile = await ProfileModel.findByIdAndUpdate(profileId, { ...profileData }, { new: true });
-//     if (!updateProfileById) throw new HttpException(409, "Profile doesn't exist");
-
-//     return updateProfileById;
-//   }
-
-//   public async deleteProfile(profileId: string): Promise<Profile> {
-//     const deleteProfileById: Profile = await ProfileModel.findByIdAndDelete(profileId);
-//     if (!deleteProfileById) throw new HttpException(409, "User doesn't exist");
-
-//     return deleteProfileById;
-//   }
-
-//   public async updatePriceList(accountId: string, newPriceListItems: any[]) {
-//     const account = await ProfileModel.findOne({ 'Accounts._id': accountId });
-//     if (!account) {
-//       throw new Error('Account not found');
-//     }
-
-//     const accountIndex = account.Accounts.findIndex((acc: any) => acc._id.equals(accountId));
-//     if (accountIndex === -1) {
-//       throw new Error("Account not found in profile's accounts");
-//     }
-
-//     if (!account.Accounts[accountIndex].priceList) {
-//       account.Accounts[accountIndex].priceList = [];
-//     }
-
-//     // Creating a map with existing price list items
-//     const updatedPriceList = new Map(
-//       account.Accounts[accountIndex].priceList.map(item => {
-//         const key = `${item.MCC}${item.MNC}_${account._id}`;
-//         console.log(`Mapping existing item with key: ${key}`, item);
-//         return [key, item];
-//       }),
-//     );
-
-//     // Process each new price item
-//     newPriceListItems.forEach(newItem => {
-//       if (!this.isValidPriceListItem(newItem)) return;
-
-//       const customId = `${newItem.MCC}${newItem.MNC}_${account._id}`;
-//       console.log(`Processing new item with CustomId: ${customId}`, newItem);
-//       const existingItem = updatedPriceList.get(customId);
-
-//       if (existingItem) {
-//         console.log('Existing item found, checking for updates...', existingItem);
-//         if (existingItem.price !== newItem.price) {
-//           console.log('Price change detected, updating item...');
-//           updatedPriceList.set(customId, {
-//             ...existingItem,
-//             oldPrice: existingItem.price,
-//             price: newItem.price,
-//             country: newItem.country,
-//             MCC: newItem.MCC,
-//             MNC: newItem.MNC,
-//             customId: customId,
-//           });
-//         }
-//       } else {
-//         console.log('No existing item found, adding new...', newItem);
-//         updatedPriceList.set(customId, newItem);
-//       }
-//     });
-
-//     // Update the account's price list with new/updated items
-//     account.Accounts[accountIndex].priceList = Array.from(updatedPriceList.values());
-//     console.log('Updated price list:', account.Accounts[accountIndex].priceList);
-//     await account.save();
-//   }
-
-//   private isValidPriceListItem(item: { country: string; MCC: string; price: string }) {
-//     return item.country && item.MCC && item.price;
-//   }
-
-//   public async findRelevantAccountAndAttachment(profile: Profile, mail: ParsedMail) {
-//     if (!mail.attachments || mail.attachments.length === 0) {
-//       console.log('Email has no attachments, skipping.');
-//       return null;
-//     }
-
-//     let foundAccount = null;
-//     let relevantAttachment = null;
-
-//     const emailSubject = mail.subject?.toLowerCase() || '';
-//     const emailText = mail.text?.toLowerCase() || '';
-
-//     foundAccount = profile.Accounts.find(account => {
-//       const username = account.connection.userName.toLowerCase();
-//       return emailSubject.toLowerCase().includes(username) || emailText.toLowerCase().includes(username);
-//     });
-
-//     if (foundAccount) {
-//       relevantAttachment = mail.attachments.find(attachment => {
-//         const isRelevantFormat = [FileFormat.CSV, FileFormat.XLS, FileFormat.XLSX].includes(attachment.contentType as FileFormat);
-//         return isRelevantFormat && attachment.filename.toLowerCase().includes(foundAccount.emailCoverageList.partialFileName.toLowerCase());
-//       });
-
-//       if (!relevantAttachment) {
-//         relevantAttachment = mail.attachments.find(attachment => {
-//           if ([FileFormat.XLS, FileFormat.XLSX].includes(attachment.contentType as FileFormat)) {
-//             const workbook = xlsx.read(attachment.content, { type: 'buffer' });
-//             return workbook.SheetNames.some(sheetName => sheetName.toLowerCase().includes(foundAccount.connection.userName.toLowerCase()));
-//           }
-//           return false;
-//         });
-//       }
-//     }
-
-//     if (!foundAccount) {
-//       mail.attachments.forEach(attachment => {
-//         if (!foundAccount && [FileFormat.CSV, FileFormat.XLS, FileFormat.XLSX].includes(attachment.contentType as FileFormat)) {
-//           foundAccount = profile.Accounts.find(account => {
-//             const username = account.connection.userName.toLowerCase();
-//             const matchesFilename = attachment.filename.toLowerCase().includes(username);
-//             let matchesSheetName = false;
-//             if ([FileFormat.XLS, FileFormat.XLSX].includes(attachment.contentType as FileFormat)) {
-//               const workbook = xlsx.read(attachment.content, { type: 'buffer' });
-//               matchesSheetName = workbook.SheetNames.some(sheetName => sheetName.toLowerCase().includes(username));
-//             }
-//             return matchesFilename || matchesSheetName;
-//           });
-//           if (foundAccount) {
-//             relevantAttachment = attachment;
-//           }
-//         }
-//       });
-//     }
-
-//     if (foundAccount && relevantAttachment) {
-//       return { account: foundAccount, attachment: relevantAttachment };
-//     } else {
-//       return null;
-//     }
-//   }
-
-//   public parseCsvWithSchema(content: Buffer | unknown[], schemaConfig: SchemaConfig): ParsedItem[] {
-//     const lines: string[] = content
-//       .toString('utf8')
-//       .split('\n')
-//       .filter(line => line.trim() !== '');
-//     const headers: string[] = lines[schemaConfig.headerRow - 1].split(',').map(header => header.trim().replace(/^"|"$/g, ''));
-
-//     const columnIndexMap: { [key: string]: number } = {};
-//     Object.entries(schemaConfig.fields).forEach(([fieldName, possibleHeaders]) => {
-//       columnIndexMap[fieldName] = headers.findIndex(header => possibleHeaders.some(possibleHeader => possibleHeader === header));
-//     });
-
-//     return lines.slice(schemaConfig.headerRow).map(line => {
-//       const data = line.split(',').map(cell => cell.trim().replace(/^"|"$/g, ''));
-//       const obj: Partial<ParsedItem> = {};
-//       Object.entries(columnIndexMap).forEach(([fieldName, index]) => {
-//         if (index >= 0) {
-//           obj[fieldName as keyof ParsedItem] = data[index];
-//         }
-//       });
-
-//       if (!obj.currency) obj.currency = 'EUR';
-
-//       return obj as ParsedItem;
-//     });
-//   }
-// }

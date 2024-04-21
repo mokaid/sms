@@ -8,19 +8,19 @@ export class PriceListItem {
   @prop({ ref: () => Account, required: true })
   public account: Ref<Account>;
 
-  @prop({ required: true })
+  @prop({ required: false })
   public country: string;
 
-  @prop({ required: true })
+  @prop({ required: false })
   public MCC: string;
 
-  @prop({ required: true })
+  @prop({ required: false })
   public MNC: string;
 
   @prop({ required: false })
   public oldPrice?: string;
 
-  @prop({ required: true })
+  @prop({ required: false })
   public price: string;
 
   @prop({ type: String, required: true, enum: Currency, default: Currency.EUR })

@@ -68,23 +68,25 @@ class EmailFetcherService {
               const profile = await this.profile.findProfileByAccountEmail(mail.from.value[0].address);
 
               if (profile) {
-                const result = await this.profile.findRelevantAccountAndAttachment(profile, mail);
+                const result = await this.profile.findRelevantAttachmentForAccount(profile.data?.accounts[0], mail);
 
                 if (result) {
                   const csvContent = Buffer.from(result.attachment.content, 'base64');
-                  const parsedData = this.profile.parseCsvWithSchema(csvContent, profile.SchemaConfig);
+
+                  const { deleteAllExisting } = profile.data.accounts[0].emailCoverageList;
+
+                  const parsedData = this.profile.parseCsvWithSchema(csvContent, profile.data.SchemaConfig);
 
                   const priceListItems = parsedData.map(item => ({
-                    customId: `${item.MCC}${item.MNC}_${result.account._id}`,
-                    country: item.country || '_',
-                    MCC: item.MCC || '_',
-                    MNC: item.MNC || '_',
+                    country: item.country,
+                    MCC: item.MCC,
+                    MNC: item.MNC,
                     price: item.price,
                     currency: item.currency,
                   }));
 
                   await this.profile
-                    .updatePriceList(result.account._id, priceListItems)
+                    .updatePriceList(result.account._id, priceListItems, deleteAllExisting)
                     .then(() => {
                       console.log('Price list updated successfully.');
                     })
