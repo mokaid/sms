@@ -115,13 +115,14 @@ export class ProfileService {
 
     const profilesPromise = this.profileModel
       .find(searchQuery)
-      .populate({
-        path: 'accounts',
-        populate: {
-          path: 'priceList',
-          model: 'PriceListItem', // Ensure this is the correct name of your price list model
-        },
-      })
+      // .populate({
+      //   path: 'accounts',
+      //   select: { priceList: 0 },
+      // populate: {
+      //   path: 'priceList',
+      //   model: 'PriceListItem', // Ensure this is the correct name of your price list model
+      // },
+      //})
       .skip(skip)
       .limit(limit)
       .sort({ [orderBy]: sortDirection })
