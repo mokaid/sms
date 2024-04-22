@@ -45,7 +45,7 @@ class App {
     this.initializeRoutes(routes);
     this.initializeSwagger();
     this.initializeErrorHandling();
-    this.initializeEmailFetcher();
+    //this.initializeEmailFetcher();
   }
 
   public async listen() {
