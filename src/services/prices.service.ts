@@ -3,28 +3,15 @@ import { Inject, Service } from 'typedi';
 
 import { Account } from '@/models/accounts.model';
 import { HttpException } from '@/exceptions/HttpException';
-import { Profile } from '@/models/profiles.model';
 import { PriceListItem } from '@/models/prices.model';
 import { Currency } from '@/enums/common.enums';
 
 @Service()
 export class PriceService {
   constructor(
-    @Inject('ProfileModel') private profileModel: Model<Profile>,
     @Inject('AccountModel') private accountModel: Model<Account>,
     @Inject('PriceListItemModel') private priceListItemModel: Model<PriceListItem>,
-  ) {
-    if (!this.profileModel || !this.accountModel || !this.priceListItemModel) {
-      console.error('Dependency injection failed:', {
-        profileModel: !!this.profileModel,
-        accountModel: !!this.accountModel,
-        priceListItemModel: !!this.priceListItemModel,
-      });
-      throw new Error('Dependencies were not injected properly!');
-    } else {
-      console.log('loaded');
-    }
-  }
+  ) {}
 
   public async findPriceById(priceId: string): Promise<PriceListItem> {
     const price = await this.priceListItemModel.findOne({ _id: priceId }).exec();

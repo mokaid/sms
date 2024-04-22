@@ -1,7 +1,7 @@
-import { getModelForClass, modelOptions, post, pre, prop } from '@typegoose/typegoose';
+import { modelOptions, prop } from '@typegoose/typegoose';
 
 @modelOptions({ schemaOptions: { collection: 'users', timestamps: true } })
-class User {
+export class Users {
   @prop({ type: String, required: true, unique: true })
   public email: string;
 
@@ -12,5 +12,3 @@ class User {
 
   public updatedAt?: Date;
 }
-
-export const UserModel = getModelForClass(User);
