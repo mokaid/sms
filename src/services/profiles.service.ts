@@ -113,14 +113,14 @@ export class ProfileService {
 
     const profilesPromise = this.profileModel
       .find(searchQuery)
-      // .populate({
-      //   path: 'accounts',
-      //   select: { priceList: 0 },
-      // populate: {
-      //   path: 'priceList',
-      //   model: 'PriceListItem', // Ensure this is the correct name of your price list model
-      // },
-      //})
+      .populate({
+        path: 'accounts',
+        select: { priceList: 0 },
+        // populate: {
+        //   path: 'priceList',
+        //   model: 'PriceListItem', // Ensure this is the correct name of your price list model
+        // },
+      })
       .skip(skip)
       .limit(limit)
       .sort({ [orderBy]: sortDirection })
@@ -201,9 +201,11 @@ export class ProfileService {
       if (existingProfile) {
         throw new HttpException(409, 'This profile already exists with the same accounting reference.');
       }
+      // console.log('Accounts data:', profileData.Accounts);
 
       const updateProfileById = await this.profileModel.findByIdAndUpdate(profileId, { $set: profileData }, { new: true, session });
 
+      console.log('A');
       if (!updateProfileById) {
         throw new HttpException(409, "Profile doesn't exist.");
       }
@@ -211,8 +213,6 @@ export class ProfileService {
       const existingAccounts = updateProfileById.accounts || [];
 
       const updatedAccounts = [];
-
-      // console.log(profileData);
 
       for (const accountData of profileData.Accounts) {
         const existingAccount = await this.accountModel.findOne(

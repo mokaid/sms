@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 import { ValidationError, validateOrReject } from 'class-validator';
+import { classToPlain, plainToInstance } from 'class-transformer';
 
 import { HttpException } from '@exceptions/HttpException';
-import { plainToInstance } from 'class-transformer';
 
 /**
  * Extracts error messages from validation errors, including nested errors.
@@ -38,10 +38,14 @@ export const ValidationMiddleware = (type: any, skipMissingProperties = false, w
     }
 
     // Convert the request body to the class instance
+    console.log(req.body);
     const dto = plainToInstance(type, req.body);
+    console.log(dto);
+
     validateOrReject(dto, { skipMissingProperties, whitelist, forbidNonWhitelisted })
       .then(() => {
-        req.body = dto;
+        req.body = classToPlain(dto); // This ensures the object is in plain form
+
         next();
       })
       .catch((errors: ValidationError[]) => {
