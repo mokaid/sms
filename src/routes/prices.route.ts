@@ -16,6 +16,8 @@ export class PriceRoute implements Routes {
 
   private initializeRoutes() {
     this.router.get(`${this.path}`, AuthMiddleware, this.price.getPriceDetails);
+    this.router.get(`${this.path}/:id`, AuthMiddleware, this.price.getPriceeById);
+
     this.router.post(`${this.path}/:id`, AuthMiddleware, ValidationMiddleware(PriceListDetailsDto), this.price.addPriceListItem);
     this.router.put(`${this.path}/:id`, AuthMiddleware, ValidationMiddleware(PriceListDetailsDto, true), this.price.updatePriceList);
     this.router.delete(`${this.path}/:id`, AuthMiddleware, this.price.deletePrice);

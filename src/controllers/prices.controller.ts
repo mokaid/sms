@@ -56,6 +56,17 @@ export class PriceController {
     }
   };
 
+  public getPriceeById = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const priceId: string = req.params.id;
+      const findOnePriceData = await this.price.findPriceById(priceId);
+
+      res.status(200).json({ data: findOnePriceData, message: 'findOne' });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   public updatePriceList = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const customId: string = req.params.id;

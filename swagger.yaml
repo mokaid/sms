@@ -410,6 +410,74 @@ paths:
                 description: Invalid input
               '404':
                 description: Account not found
+      get:
+            tags:
+              - Prices
+            summary: Get Price List Item by ID
+            description: Retrieves detailed information about a specific price list item using its unique ID.
+            operationId: getPriceListItemById
+            parameters:
+              - in: path
+                name: id
+                required: true
+                schema:
+                  type: string
+                description: The unique identifier of the price list item.
+            responses:
+              200:
+                description: Detailed information about the price list item.
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      properties:
+                        country:
+                          type: string
+                          description: Country where the price list item applies.
+                        MCC:
+                          type: string
+                          description: Mobile Country Code associated with the price list item.
+                        MNC:
+                          type: string
+                          description: Mobile Network Code associated with the price list item.
+                        price:
+                          type: string
+                          description: Current price of the mobile services for the specified MCC and MNC.
+                        oldPrice:
+                          type: string
+                          nullable: true
+                          description: Previous price before the current price was updated.
+                        currency:
+                          type: string
+                          enum: [USD, EUR, GBP]
+                          description: Currency used for the price.
+                      required:
+                        - country
+                        - MCC
+                        - MNC
+                        - price
+                        - currency
+              404:
+                description: Price list item not found.
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      properties:
+                        message:
+                          type: string
+                          example: "Price list item not found for the given ID."
+              500:
+                description: Internal Server Error
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      properties:
+                        message:
+                          type: string
+                          example: "An error occurred while processing the request."
+
 
   /profiles:
       get:

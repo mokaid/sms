@@ -201,7 +201,6 @@ export class ProfileService {
       if (existingProfile) {
         throw new HttpException(409, 'This profile already exists with the same accounting reference.');
       }
-      // console.log('Accounts data:', profileData.Accounts);
 
       const updateProfileById = await this.profileModel.findByIdAndUpdate(profileId, { $set: profileData }, { new: true, session });
 

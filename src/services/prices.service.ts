@@ -26,10 +26,20 @@ export class PriceService {
     }
   }
 
+  public async findPriceById(priceId: string): Promise<PriceListItem> {
+    const price = await this.priceListItemModel.findOne({ _id: priceId }).exec();
+
+    if (!price) {
+      throw new HttpException(409, "Price doesn't exist");
+    }
+
+    return price;
+  }
+
   public async createPriceList(priceListData: { currency: Currency }, accountId: string): Promise<PriceListItem> {
     console.log(`Creating price list for account ID: ${accountId}`);
 
-    const session = await this.profileModel.db.startSession();
+    const session = await this.priceListItemModel.db.startSession();
     session.startTransaction();
     try {
       const priceListItem = new this.priceListItemModel({
