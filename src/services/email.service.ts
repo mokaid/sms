@@ -77,7 +77,7 @@ class EmailFetcherService {
                 const result = await this.profile.findRelevantAttachmentForAccount(profile.data?.accounts[0], mail);
 
                 if (result) {
-                  const csvContent = Buffer.from(String(result.attachment.content), 'base64');
+                  const csvContent = Buffer.from(result.attachment.content, 'base64');
 
                   const { deleteAllExisting } = profile.data.accounts[0].emailCoverageList;
 
