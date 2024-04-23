@@ -1,5 +1,6 @@
 import { Account } from './models/accounts.model';
 import { Container } from 'typedi';
+import { History } from './models/history.model';
 import { PriceListItem } from './models/prices.model';
 import { Profile } from './models/profiles.model';
 import { Users } from './models/users.model';
@@ -16,5 +17,6 @@ export function initializeModels(): void {
   Container.set('ProfileModel', ProfileModel);
   Container.set('AccountModel', AccountModel);
   Container.set('PriceListItemModel', PriceListItemModel);
+
   console.log('Models initialized and set in container');
 }

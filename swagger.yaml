@@ -478,6 +478,44 @@ paths:
                           type: string
                           example: "An error occurred while processing the request."
 
+  /history/{id}:
+      get:
+            tags:
+              - History
+            summary: Get History List Item by ID
+            description: Retrieves detailed information about a specific history list item using its unique ID.
+            operationId: getHistoryListItemById
+            parameters:
+              - in: path
+                name: id
+                required: true
+                schema:
+                  type: string
+                description: The unique identifier of the history list item.
+            responses:
+              200:
+                description: Detailed information about the history list item.
+              404:
+                description: History list item not found.
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      properties:
+                        message:
+                          type: string
+                          example: "History list item not found for the given ID."
+              500:
+                description: Internal Server Error
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      properties:
+                        message:
+                          type: string
+                          example: "An error occurred while processing the request."
+
 
   /profiles:
       get:

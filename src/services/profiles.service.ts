@@ -204,7 +204,6 @@ export class ProfileService {
 
       const updateProfileById = await this.profileModel.findByIdAndUpdate(profileId, { $set: profileData }, { new: true, session });
 
-      console.log('A');
       if (!updateProfileById) {
         throw new HttpException(409, "Profile doesn't exist.");
       }
