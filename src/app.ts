@@ -6,9 +6,9 @@ import { logger, stream } from '@utils/logger';
 import Container from 'typedi';
 import EmailFetcherService from './services/email.service';
 import { ErrorMiddleware } from '@middlewares/error.middleware';
+import { HistoryModel } from './models/history.model';
 import { Routes } from '@interfaces/routes.interface';
 import compression from 'compression';
-import { connect } from 'http2';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { dbConnection } from '@database';
@@ -21,7 +21,6 @@ import morgan from 'morgan';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 
-initializeModels();
 const events = ['SIGTERM', 'SIGINT', 'beforeExit', 'rejectionHandled', 'unhandledRejection', 'uncaughtException', 'exit'];
 events.forEach(eventName => {
   console.log('listening on ', eventName);
@@ -31,14 +30,19 @@ events.forEach(eventName => {
   });
 });
 
+initializeModels();
+
 class App {
   public app: express.Application;
   public env: string;
   public port: string | number;
+  public historyModel: any;
+
   constructor(routes: Routes[]) {
     this.app = express();
     this.env = NODE_ENV || 'development';
     this.port = PORT || 3000;
+    this.historyModel = HistoryModel;
 
     this.connectToDatabase();
     this.initializeMiddlewares();
@@ -55,7 +59,7 @@ class App {
       logger.info(`🚀 App listening on the port ${this.port}`);
       logger.info(`=================================`);
     });
-    await import('./modelLoader').then(module => module.initializeModels());
+    // await import('./modelLoader').then(module => module.initializeModels());
   }
 
   public getServer() {
@@ -67,15 +71,42 @@ class App {
     this.watchDatabaseChanges();
   }
 
-  private watchDatabaseChanges() {
-    const changeStream = mongoose.connection.collection('profiles').watch();
-    changeStream
-      .on('change', change => {
-        console.log('Changerrrr detected:', change);
-      })
-      .on('error', error => {
-        console.error('Change stream error:', error);
+  private async watchDatabaseChanges() {
+    const collections = ['profiles', 'pricelistitems', 'accounts'];
+    const pipeline = [{ $match: { operationType: { $in: ['update'] }, 'updateDescription.updatedFields': { $exists: true } } }];
+
+    collections.forEach(collection => {
+      const changeStream = mongoose.connection.collection(collection).watch(pipeline, { fullDocument: 'updateLookup' });
+      changeStream.on('change', async (change: any) => {
+        console.log(`Change detected in ${collection}:`, change);
+
+        if (change.updateDescription && change.updateDescription.updatedFields) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { updatedAt, ...updatedFields } = change.updateDescription.updatedFields;
+
+          if (Object.keys(updatedFields).length > 0) {
+            const changes: Record<string, any>[] = [];
+            for (const key in updatedFields) {
+              changes.push({ [key]: updatedFields[key] });
+            }
+
+            const historyEntry = new this.historyModel({
+              model: collection,
+              refId: change.documentKey._id.toString(),
+              fields: changes,
+            });
+
+            historyEntry.save().catch(console.error);
+          } else {
+            console.log('No significant fields updated, not creating a history record.');
+          }
+        }
       });
+
+      changeStream.on('error', (error: Error) => {
+        console.error(`Change stream error in ${collection}:`, error);
+      });
+    });
   }
 
   private initializeMiddlewares() {

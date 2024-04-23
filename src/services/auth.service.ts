@@ -3,10 +3,11 @@ import { compare, hash } from 'bcrypt';
 
 import { HttpException } from '@/exceptions/HttpException';
 import { SECRET_KEY } from '@config';
-import { Service } from 'typedi';
-import { User } from '@interfaces/users.interface';
-import { UserModel } from '@models/users.model';
+import { Inject, Service } from 'typedi';
 import { sign } from 'jsonwebtoken';
+import { Model } from 'mongoose';
+import { User } from '@/interfaces/users.interface';
+import { Users } from '@/models/users.model';
 
 const createToken = (user: User): TokenData => {
   const dataStoredInToken: DataStoredInToken = { _id: user._id };
@@ -21,18 +22,20 @@ const createCookie = (tokenData: TokenData): string => {
 
 @Service()
 export class AuthService {
+  constructor(@Inject('UserModel') private userModel: Model<Users>) {}
+
   public async signup(userData: User): Promise<User> {
-    const findUser: User = await UserModel.findOne({ email: userData.email });
+    const findUser: User = await this.userModel.findOne({ email: userData.email });
     if (findUser) throw new HttpException(409, `This email ${userData.email} already exists`);
 
     const hashedPassword = await hash(userData.password, 10);
-    const createUserData: User = await UserModel.create({ ...userData, password: hashedPassword });
+    const createUserData: User = (await this.userModel.create({ ...userData, password: hashedPassword })) as Users;
 
     return createUserData;
   }
 
   public async login(userData: User): Promise<{ cookie: string; findUser: User; tokenData: TokenData }> {
-    const findUser: User = await UserModel.findOne({ email: userData.email });
+    const findUser: User = await this.userModel.findOne({ email: userData.email });
     if (!findUser) throw new HttpException(409, `This email ${userData.email} was not found`);
 
     const isPasswordMatching: boolean = await compare(userData.password, findUser.password);
@@ -45,7 +48,7 @@ export class AuthService {
   }
 
   public async logout(userData: User): Promise<User> {
-    const findUser: User = await UserModel.findOne({ email: userData.email });
+    const findUser: Users = await this.userModel.findOne({ email: userData.email });
     if (!findUser) throw new HttpException(409, `This email ${userData.email} was not found`);
 
     return findUser;

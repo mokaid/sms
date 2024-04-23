@@ -1,7 +1,7 @@
-import Container from 'typedi';
 import { EMAIL_CHECK_INTERVAL } from '@/config';
 import { IAccount } from '@/interfaces/accounts.interface';
 import Imap from 'imap';
+import { Inject } from 'typedi';
 import { ProfileService } from './profiles.service';
 import { Service } from 'typedi';
 import { imapConfig } from '@/config/email';
@@ -16,9 +16,8 @@ class EmailFetcherService {
     search: (arg0: string[], arg1: (err: any, results: any) => Promise<void>) => void;
     fetch: (arg0: any, arg1: { bodies: string; markSeen: boolean; struct: boolean }) => any;
   };
-  public profile = Container.get(ProfileService);
 
-  constructor() {
+  constructor(@Inject(() => ProfileService) private profile: ProfileService) {
     this.imap = new Imap(imapConfig);
     this.setupListeners();
   }

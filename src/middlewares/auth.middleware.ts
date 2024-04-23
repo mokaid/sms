@@ -1,9 +1,10 @@
 import { DataStoredInToken, RequestWithUser } from '@interfaces/auth.interface';
 import { NextFunction, Response } from 'express';
 
+import Container from 'typedi';
 import { HttpException } from '@/exceptions/HttpException';
 import { SECRET_KEY } from '@config';
-import { UserModel } from '@models/users.model';
+import { UserService } from '@/services/users.service';
 import { verify } from 'jsonwebtoken';
 
 const getAuthorization = req => {
@@ -22,7 +23,8 @@ export const AuthMiddleware = async (req: RequestWithUser, res: Response, next: 
 
     if (Authorization) {
       const { _id } = (await verify(Authorization, SECRET_KEY)) as DataStoredInToken;
-      const findUser = await UserModel.findById(_id);
+      const userService = Container.get(UserService);
+      const findUser = await userService.findUserById(_id);
 
       if (findUser) {
         req.user = findUser;
