@@ -135,9 +135,7 @@ export class PriceService {
         throw new HttpException(404, 'Price list not found for the given customId');
       }
 
-      const updates: { oldPrice: string } = {
-        oldPrice: '',
-      };
+      const updates: { [x: string]: unknown; oldPrice?: string } = {};
       for (const [key, value] of Object.entries(newPriceData)) {
         if (value !== priceListItem[key]) {
           if (key === 'price') {
