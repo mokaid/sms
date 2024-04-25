@@ -516,7 +516,6 @@ paths:
                           type: string
                           example: "An error occurred while processing the request."
 
-
   /profiles:
       get:
         tags:
@@ -678,7 +677,180 @@ paths:
         "500":
           description: "Internal Server Error"
 
-
+  /operators:
+    get:
+      tags:
+        - Operators
+      summary: "Get a list of all operators"
+      description: "Retrieve a list of all operators with optional pagination and filters, allowing filtering by operational characteristics."
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: "Page number for pagination."
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: "Number of operators per page."
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            default: "createdAt"
+          description: "The field to sort the operators by."
+        - in: query
+          name: sortOrder
+          schema:
+            type: string
+            default: "asc"
+          description: "Sorting direction, can be 'asc' or 'desc'."
+        - in: query
+          name: country
+          schema:
+            type: string
+          description: "Country filter to list operators by specific country."
+        - in: query
+          name: zone
+          schema:
+            type: string
+          description: "Zone filter to list operators by specific geographical zone."
+        - in: query
+          name: operator
+          schema:
+            type: string
+          description: "Operator name filter to list specific operators."
+        - in: query
+          name: countryCode
+          schema:
+            type: string
+          description: "Country code associated with the operator."
+        - in: query
+          name: mobileCountryCode
+          schema:
+            type: string
+          description: "Mobile Country Code (MCC) associated with the operator."
+        - in: query
+          name: mobileNetworkCode
+          schema:
+            type: string
+          description: "Mobile Network Code (MNC) associated with the operator."
+        - in: query
+          name: MCCMNC
+          schema:
+            type: string
+          description: "Combined Mobile Country Code and Mobile Network Code."
+        - in: query
+          name: active
+          schema:
+            type: boolean
+          description: "Active status filter to list operators by their active/inactive status."
+      responses:
+        200:
+          description: "A list of operators"
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/definitions/Operator'
+              total:
+                type: integer
+              page:
+                type: integer
+              limit:
+                type: integer
+              message:
+                type: string
+    post:
+      tags:
+        - Operators
+      summary: "Add a new operator"
+      description: "Creates a new operator in the database."
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: "Operator data to create"
+          required: true
+          schema:
+            $ref: '#/definitions/Operator'
+      responses:
+        201:
+          description: "Operator created successfully"
+        400:
+          description: "Invalid input data"
+  /operators/{id}:
+    get:
+      tags:
+        - Operators
+      summary: "Get a specific operator by ID"
+      description: "Retrieve detailed information about a specific operator by ID."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Unique identifier of the operator"
+      responses:
+        200:
+          description: "Detailed information about the operator"
+          schema:
+            $ref: '#/definitions/Operator'
+        404:
+          description: "Operator not found"
+    put:
+      tags:
+        - Operators
+      summary: "Update an existing operator"
+      description: "Updates an existing operator identified by its ID."
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Unique identifier of the operator to be updated"
+        - in: body
+          name: body
+          description: "Operator data to update"
+          required: true
+          schema:
+            $ref: '#/definitions/Operator'
+      responses:
+        200:
+          description: "Operator updated successfully"
+        404:
+          description: "Operator not found"
+    delete:
+      tags:
+        - Operators
+      summary: "Delete an operator"
+      description: "Deletes an operator identified by its ID."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Unique identifier of the operator to be deleted"
+      responses:
+        200:
+          description: "Operator deleted successfully"
+        404:
+          description: "Operator not found"
 definitions:
   users:
     type: object
@@ -1055,7 +1227,46 @@ definitions:
                   type: string
                 default: ["EUR"]
                 description: "Default to 'EUR' if column is absent or value is missing. Possible header names for currency"
-      
+
+  Operator:
+    type: object
+    properties:
+        id:
+          type: string
+          description: Unique identifier for the operator
+        zone:
+          type: string
+          description: Geographical zone where the operator is active
+        country:
+          type: string
+          description: Country of the operator
+        operator:
+          type: string
+          description: Name of the operator
+        countryCode:
+          type: string
+          description: Country code associated with the operator
+        mobileCountryCode:
+          type: string
+          description: Mobile Country Code (MCC)
+        mobileNetworkCode:
+          type: string
+          description: Mobile Network Code (MNC)
+        MCCMNC:
+          type: string
+          description: Combined Mobile Country Code and Mobile Network Code
+        zoneId:
+          type: string
+          description: Identifier for the zone
+        countryId:
+          type: string
+          description: Identifier for the country
+        operatorId:
+          type: string
+          description: Identifier for the operator
+        active:
+          type: boolean
+          description: Status of the operator      
 
 schemes:
  - https

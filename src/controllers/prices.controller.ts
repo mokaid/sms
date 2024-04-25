@@ -26,21 +26,25 @@ export class PriceController {
       const orderBy = (req.query.orderBy as string) || 'createdAt';
       const sort = (req.query.sort as string) || 'asc';
 
-      const price = req.query.price as string;
-      const priceCondition = (req.query.priceCondition as string) || 'eq'; // 'gt', 'lt', 'eq'
-      const oldPrice = req.query.oldPrice as string;
-      const oldPriceCondition = (req.query.oldPriceCondition as string) || 'eq'; // 'gt', 'lt', 'eq'
-      const country = req.query.country as string;
-      const mnc = req.query.mnc as string;
-      const mcc = req.query.mcc as string;
-      const currency = req.query.currency as string;
+      const filters = {
+        price: req.query.price as string,
+        priceCondition: (req.query.priceCondition as string) || 'eq', // 'gt', 'lt', 'eq'
+        oldPrice: req.query.oldPrice as string,
+        oldPriceCondition: (req.query.oldPriceCondition as string) || 'eq', // 'gt', 'lt', 'eq'
+        country: req.query.country as string,
+        mnc: req.query.mnc as string,
+        mcc: req.query.mcc as string,
+        currency: req.query.currency as string,
+      };
+
+      Object.keys(filters).forEach(key => filters[key] === undefined && delete filters[key]);
 
       const { data, total } = await this.price.findAllPricesDetailsPopulate({
         page,
         limit,
         orderBy,
         sort,
-        filters: { price, priceCondition, oldPrice, oldPriceCondition, country, mnc, mcc, currency },
+        filters,
       });
 
       res.status(200).json({
