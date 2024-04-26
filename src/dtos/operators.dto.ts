@@ -1,4 +1,6 @@
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
+
+import { Type } from 'class-transformer';
 
 export class OperatorsDto {
   @IsOptional()
@@ -43,5 +45,5 @@ export class OperatorsDto {
 
   @IsOptional()
   @IsBoolean()
-  active?: boolean;
+  active?: string;
 }

@@ -20,15 +20,13 @@ security:
   - BearerAuth: []
 # Paths definition
 
-
-
 paths:
   /signup:
     post:
       tags:
         - Authentication
-      summary: "User signup"
-      description: "This endpoint registers a new user."
+      summary: 'User signup'
+      description: 'This endpoint registers a new user.'
       consumes:
         - application/json
       produces:
@@ -36,24 +34,24 @@ paths:
       parameters:
         - in: body
           name: body
-          description: "User data for signup"
+          description: 'User data for signup'
           required: true
           schema:
             $ref: '#/definitions/users'
       responses:
-        "200":
-          description: "User successfully registered"
+        '200':
+          description: 'User successfully registered'
           schema:
             $ref: '#/definitions/User'
-        "409":
-          description: "Email already exists or other conflict error"
+        '409':
+          description: 'Email already exists or other conflict error'
 
   /login:
     post:
       tags:
         - Authentication
-      summary: "User login"
-      description: "This endpoint authenticates a user and returns a cookie."
+      summary: 'User login'
+      description: 'This endpoint authenticates a user and returns a cookie.'
       consumes:
         - application/json
       produces:
@@ -61,13 +59,13 @@ paths:
       parameters:
         - in: body
           name: body
-          description: "User credentials"
+          description: 'User credentials'
           required: true
           schema:
             $ref: '#/definitions/users'
       responses:
-        "200":
-          description: "User successfully authenticated"
+        '200':
+          description: 'User successfully authenticated'
           schema:
             type: object
             properties:
@@ -75,34 +73,34 @@ paths:
                 type: string
               findUser:
                 $ref: '#/definitions/User'
-        "409":
-          description: "Authentication failed"
+        '409':
+          description: 'Authentication failed'
 
   /logout:
     post:
       tags:
         - Authentication
-      summary: "User logout"
-      description: "This endpoint logs out a user."
+      summary: 'User logout'
+      description: 'This endpoint logs out a user.'
       parameters:
         - in: body
           name: body
-          description: "User data for logout"
+          description: 'User data for logout'
           required: true
           schema:
             $ref: '#/definitions/users'
       responses:
-        "200":
-          description: "User successfully logged out"
+        '200':
+          description: 'User successfully logged out'
           schema:
             $ref: '#/definitions/User'
-        "409":
-          description: "User not found"
+        '409':
+          description: 'User not found'
 
   /users:
     get:
       tags:
-      - users
+        - users
       summary: Find All Users
       responses:
         200:
@@ -111,15 +109,15 @@ paths:
           description: 'Server Error'
     post:
       tags:
-      - users
+        - users
       summary: Add User
       parameters:
-      - name: body
-        in: body
-        description: user Data
-        required: true
-        schema:
-          $ref: '#/definitions/users'
+        - name: body
+          in: body
+          description: user Data
+          required: true
+          schema:
+            $ref: '#/definitions/users'
       responses:
         201:
           description: 'Created'
@@ -133,13 +131,13 @@ paths:
   /users/{id}:
     get:
       tags:
-      - users
+        - users
       summary: Find User By Id
       parameters:
-      - name: id
-        in: path
-        description: User Id
-        required: true
+        - name: id
+          in: path
+          description: User Id
+          required: true
       responses:
         200:
           description: 'OK'
@@ -149,19 +147,19 @@ paths:
           description: 'Server Error'
     put:
       tags:
-      - users
+        - users
       summary: Update User By Id
       parameters:
-      - name: id
-        in: path
-        description: user Id
-        required: true
-      - name: body
-        in: body
-        description: user Data
-        required: true
-        schema:
-          $ref: '#/definitions/users'
+        - name: id
+          in: path
+          description: user Id
+          required: true
+        - name: body
+          in: body
+          description: user Data
+          required: true
+          schema:
+            $ref: '#/definitions/users'
       responses:
         200:
           description: 'OK'
@@ -173,13 +171,13 @@ paths:
           description: 'Server Error'
     delete:
       tags:
-      - users
+        - users
       summary: Delete User By Id
       parameters:
-      - name: id
-        in: path
-        description: user Id
-        required: true
+        - name: id
+          in: path
+          description: user Id
+          required: true
       responses:
         200:
           description: 'OK'
@@ -187,7 +185,7 @@ paths:
           description: 'Conflict'
         500:
           description: 'Server Error'
-  
+
   /prices:
     get:
       tags:
@@ -284,322 +282,322 @@ paths:
           description: Server Error
 
   /prices/{id}:
-      put:
-        tags:
-          - Prices
-        summary: Update Price List for an Account
-        description: Updates the price list for a specific account. Only 'price' and 'currency' fields can be updated. If 'price' changes, 'oldPrice' will be updated to the previous price.
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema:
-              type: string
-            description: The custom ID of the price item for which to update the price list.
-          - name: body
-            in: body
-            description: Object containing the new price and/or currency.
-            required: true
-            schema:
-              type: object
-              required: [price, currency]  # Depending on your logic, adjust required fields here
-              properties:
-                price:
-                  type: string
-                  description: New price to update. This field is required if 'currency' is not provided.
-                currency:
-                  type: string
-                  description: Currency for the new price. This field is required if 'price' is not provided.
-                MCC:
-                  type: string
-                  description: Mobile Country Code. This code identifies the country of the mobile subscriber. It is required for defining the geographical context of the price.
-                MNC:
-                  type: string
-                  description: Mobile Network Code. This code identifies the mobile network within the specified country (MCC). It is essential for pinpointing the exact mobile operator the price update applies to.
-                country:
-                  type: string
-                  description: Country name. This should be the full name of the country where the price change applies. It provides an additional geographical context alongside MCC.
-
-        responses:
-          200:
-            description: Price list updated successfully
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    data:
-                      $ref: '#/definitions/AccountProfile'
-                    message:
-                      type: string
-                      example: 'Price list updated successfully'
-          404:
-            description: No valid account or price list found for the given ID
-          400:
-            description: Bad Request (e.g., invalid input data or attempting to update restricted fields)
-          409:
-            description: Conflict (e.g., unable to update the price list due to existing data state)
-          500:
-            description: Server error
-      delete:
-        tags:
+    put:
+      tags:
         - Prices
-        summary: Delete Price By Id
-        parameters:
+      summary: Update Price List for an Account
+      description: Updates the price list for a specific account. Only 'price' and 'currency' fields can be updated. If 'price' changes, 'oldPrice' will be updated to the previous price.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The custom ID of the price item for which to update the price list.
+        - name: body
+          in: body
+          description: Object containing the new price and/or currency.
+          required: true
+          schema:
+            type: object
+            required: [price, currency] # Depending on your logic, adjust required fields here
+            properties:
+              price:
+                type: string
+                description: New price to update. This field is required if 'currency' is not provided.
+              currency:
+                type: string
+                description: Currency for the new price. This field is required if 'price' is not provided.
+              MCC:
+                type: string
+                description: Mobile Country Code. This code identifies the country of the mobile subscriber. It is required for defining the geographical context of the price.
+              MNC:
+                type: string
+                description: Mobile Network Code. This code identifies the mobile network within the specified country (MCC). It is essential for pinpointing the exact mobile operator the price update applies to.
+              country:
+                type: string
+                description: Country name. This should be the full name of the country where the price change applies. It provides an additional geographical context alongside MCC.
+
+      responses:
+        200:
+          description: Price list updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/definitions/AccountProfile'
+                  message:
+                    type: string
+                    example: 'Price list updated successfully'
+        404:
+          description: No valid account or price list found for the given ID
+        400:
+          description: Bad Request (e.g., invalid input data or attempting to update restricted fields)
+        409:
+          description: Conflict (e.g., unable to update the price list due to existing data state)
+        500:
+          description: Server error
+    delete:
+      tags:
+        - Prices
+      summary: Delete Price By Id
+      parameters:
         - name: id
           in: path
           description: price Id
           required: true
-        responses:
-          200:
-            description: 'OK'
-          409:
-            description: 'Conflict'
-          500:
-            description: 'Server Error'
-      post:
-            tags:
-              - Prices
-            summary: Add a Price List Item
-            description: Add a new price list item to the specified account's price list.
-            operationId: addPriceListItem
-            parameters:
-              - name: id
-                in: path
-                required: true
-                description: The ID of the account to which the price list item is to be added.
-                schema:
-                  type: string
-              - name: body
-                in: body
-                description: Price list item data
-                required: true
-                schema:
-                  type: object
-                  required:
-                    - country
-                    - MCC
-                    - MNC
-                    - price
-                    - currency
-                  properties:
-                    country:
-                      type: string
-                      description: Country code of the price list item.
-                    MCC:
-                      type: string
-                      description: Mobile Country Code.
-                    MNC:
-                      type: string
-                      description: Mobile Network Code.
-                    oldPrice:
-                      type: string
-                      nullable: true
-                      description: Previous price, if applicable.
-                    price:
-                      type: string
-                      description: Current price of the item.
-                    currency:
-                      type: string
-                      enum: [USD, EUR, GBP]
-                      description: Currency used for the price.
-            responses:
-              '201':
-                description: Successfully added the price list item
-              '400':
-                description: Invalid input
-              '404':
-                description: Account not found
-      get:
-            tags:
-              - Prices
-            summary: Get Price List Item by ID
-            description: Retrieves detailed information about a specific price list item using its unique ID.
-            operationId: getPriceListItemById
-            parameters:
-              - in: path
-                name: id
-                required: true
-                schema:
-                  type: string
-                description: The unique identifier of the price list item.
-            responses:
-              200:
-                description: Detailed information about the price list item.
-                content:
-                  application/json:
-                    schema:
-                      type: object
-                      properties:
-                        country:
-                          type: string
-                          description: Country where the price list item applies.
-                        MCC:
-                          type: string
-                          description: Mobile Country Code associated with the price list item.
-                        MNC:
-                          type: string
-                          description: Mobile Network Code associated with the price list item.
-                        price:
-                          type: string
-                          description: Current price of the mobile services for the specified MCC and MNC.
-                        oldPrice:
-                          type: string
-                          nullable: true
-                          description: Previous price before the current price was updated.
-                        currency:
-                          type: string
-                          enum: [USD, EUR, GBP]
-                          description: Currency used for the price.
-                      required:
-                        - country
-                        - MCC
-                        - MNC
-                        - price
-                        - currency
-              404:
-                description: Price list item not found.
-                content:
-                  application/json:
-                    schema:
-                      type: object
-                      properties:
-                        message:
-                          type: string
-                          example: "Price list item not found for the given ID."
-              500:
-                description: Internal Server Error
-                content:
-                  application/json:
-                    schema:
-                      type: object
-                      properties:
-                        message:
-                          type: string
-                          example: "An error occurred while processing the request."
+      responses:
+        200:
+          description: 'OK'
+        409:
+          description: 'Conflict'
+        500:
+          description: 'Server Error'
+    post:
+      tags:
+        - Prices
+      summary: Add a Price List Item
+      description: Add a new price list item to the specified account's price list.
+      operationId: addPriceListItem
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the account to which the price list item is to be added.
+          schema:
+            type: string
+        - name: body
+          in: body
+          description: Price list item data
+          required: true
+          schema:
+            type: object
+            required:
+              - country
+              - MCC
+              - MNC
+              - price
+              - currency
+            properties:
+              country:
+                type: string
+                description: Country code of the price list item.
+              MCC:
+                type: string
+                description: Mobile Country Code.
+              MNC:
+                type: string
+                description: Mobile Network Code.
+              oldPrice:
+                type: string
+                nullable: true
+                description: Previous price, if applicable.
+              price:
+                type: string
+                description: Current price of the item.
+              currency:
+                type: string
+                enum: [USD, EUR, GBP]
+                description: Currency used for the price.
+      responses:
+        '201':
+          description: Successfully added the price list item
+        '400':
+          description: Invalid input
+        '404':
+          description: Account not found
+    get:
+      tags:
+        - Prices
+      summary: Get Price List Item by ID
+      description: Retrieves detailed information about a specific price list item using its unique ID.
+      operationId: getPriceListItemById
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The unique identifier of the price list item.
+      responses:
+        200:
+          description: Detailed information about the price list item.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  country:
+                    type: string
+                    description: Country where the price list item applies.
+                  MCC:
+                    type: string
+                    description: Mobile Country Code associated with the price list item.
+                  MNC:
+                    type: string
+                    description: Mobile Network Code associated with the price list item.
+                  price:
+                    type: string
+                    description: Current price of the mobile services for the specified MCC and MNC.
+                  oldPrice:
+                    type: string
+                    nullable: true
+                    description: Previous price before the current price was updated.
+                  currency:
+                    type: string
+                    enum: [USD, EUR, GBP]
+                    description: Currency used for the price.
+                required:
+                  - country
+                  - MCC
+                  - MNC
+                  - price
+                  - currency
+        404:
+          description: Price list item not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Price list item not found for the given ID.'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'An error occurred while processing the request.'
 
   /history/{id}:
-      get:
-            tags:
-              - History
-            summary: Get History List Item by ID
-            description: Retrieves detailed information about a specific history list item using its unique ID.
-            operationId: getHistoryListItemById
-            parameters:
-              - in: path
-                name: id
-                required: true
-                schema:
-                  type: string
-                description: The unique identifier of the history list item.
-            responses:
-              200:
-                description: Detailed information about the history list item.
-              404:
-                description: History list item not found.
-                content:
-                  application/json:
-                    schema:
-                      type: object
-                      properties:
-                        message:
-                          type: string
-                          example: "History list item not found for the given ID."
-              500:
-                description: Internal Server Error
-                content:
-                  application/json:
-                    schema:
-                      type: object
-                      properties:
-                        message:
-                          type: string
-                          example: "An error occurred while processing the request."
+    get:
+      tags:
+        - History
+      summary: Get History List Item by ID
+      description: Retrieves detailed information about a specific history list item using its unique ID.
+      operationId: getHistoryListItemById
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The unique identifier of the history list item.
+      responses:
+        200:
+          description: Detailed information about the history list item.
+        404:
+          description: History list item not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'History list item not found for the given ID.'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'An error occurred while processing the request.'
 
   /profiles:
-      get:
-        tags:
-          - Profiles
-        summary: Find All Profiles
-        parameters:
-          - in: query
-            name: page
-            schema:
-              type: integer
-              default: 1
-            description: Page number for pagination.
-          - in: query
-            name: limit
-            schema:
-              type: integer
-              default: 10
-            description: Number of profiles per page.
-          - in: query
-            name: orderBy
-            schema:
-              type: string
-              default: createdAt
-            description: The field to order the profiles by.
-          - in: query
-            name: sort
-            schema:
-              type: string
-              default: asc
-            description: Sorting direction, can be 'asc' or 'desc'.
-          - in: query
-            name: searchTerm
-            schema:
-              type: string
-            description: The search term used to perform a partial search across multiple profile details fields, such as legal name, accounting reference, etc. There is no default value; a blank value implies no specific search filter.
-                    
-        responses:
-          200:
-            description: OK
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    data:
-                      type: array
-                      items:
-                        $ref: '#/definitions/AccountProfile'
-                    message:
-                      type: string
-          500:
-            description: Server Error  
+    get:
+      tags:
+        - Profiles
+      summary: Find All Profiles
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination.
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of profiles per page.
+        - in: query
+          name: orderBy
+          schema:
+            type: string
+            default: createdAt
+          description: The field to order the profiles by.
+        - in: query
+          name: sort
+          schema:
+            type: string
+            default: asc
+          description: Sorting direction, can be 'asc' or 'desc'.
+        - in: query
+          name: searchTerm
+          schema:
+            type: string
+          description: The search term used to perform a partial search across multiple profile details fields, such as legal name, accounting reference, etc. There is no default value; a blank value implies no specific search filter.
 
-      post:
-        tags:
-          - Profiles
-        summary: Add Account Profile
-        parameters:
-          - name: body
-            in: body
-            description: Account Profile Data
-            required: true
-            schema:
-              $ref: '#/definitions/AccountProfile'
-        responses:
-          201:
-            description: 'Created'
-          400:
-            description: 'Bad Request'
-          409:
-            description: 'Conflict'
-          500:
-            description: 'Server Error'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/definitions/AccountProfile'
+                  message:
+                    type: string
+        500:
+          description: Server Error
+
+    post:
+      tags:
+        - Profiles
+      summary: Add Account Profile
+      parameters:
+        - name: body
+          in: body
+          description: Account Profile Data
+          required: true
+          schema:
+            $ref: '#/definitions/AccountProfile'
+      responses:
+        201:
+          description: 'Created'
+        400:
+          description: 'Bad Request'
+        409:
+          description: 'Conflict'
+        500:
+          description: 'Server Error'
 
   /profiles/{id}:
     get:
       tags:
-      - Profiles
+        - Profiles
       summary: Find Profile By Id
       parameters:
-      - name: id
-        in: path
-        description: Profile Id
-        required: true
+        - name: id
+          in: path
+          description: Profile Id
+          required: true
       responses:
         200:
           description: 'OK'
@@ -609,19 +607,19 @@ paths:
           description: 'Server Error'
     put:
       tags:
-      - Profiles
+        - Profiles
       summary: Update Proifle By Id
       parameters:
-      - name: id
-        in: path
-        description: profile Id
-        required: true
-      - name: body
-        in: body
-        description: profile Data
-        required: true
-        schema:
-          $ref: '#/definitions/AccountProfile'
+        - name: id
+          in: path
+          description: profile Id
+          required: true
+        - name: body
+          in: body
+          description: profile Data
+          required: true
+          schema:
+            $ref: '#/definitions/AccountProfile'
       responses:
         200:
           description: 'OK'
@@ -630,16 +628,16 @@ paths:
         409:
           description: 'Conflict'
         500:
-          description: 'Server Error'          
+          description: 'Server Error'
     delete:
       tags:
-      - Profiles
+        - Profiles
       summary: Delete Profile By Id
       parameters:
-      - name: id
-        in: path
-        description: profile Id
-        required: true
+        - name: id
+          in: path
+          description: profile Id
+          required: true
       responses:
         200:
           description: 'OK'
@@ -647,35 +645,6 @@ paths:
           description: 'Conflict'
         500:
           description: 'Server Error'
-
-  /upload/priceList:
-    post:
-      tags:
-        - File Upload
-      summary: "Upload a price list Excel file"
-      description: "Allows users to upload a price list Excel file along with associated account ID. This endpoint accepts multipart/form-data content type."
-      consumes:
-        - multipart/form-data
-      produces:
-        - application/json
-      parameters:
-        - in: formData
-          name: file
-          type: file
-          description: The Excel file to upload.
-          required: true
-        - in: formData
-          name: accountId
-          type: string
-          description: The account ID associated with the price list file.
-          required: true
-      responses:
-        "200":
-          description: "Excel file processed successfully"
-        "400":
-          description: "Bad Request (e.g., no file uploaded or missing account ID)"
-        "500":
-          description: "Internal Server Error"
 
   /operators:
     get:
@@ -766,6 +735,7 @@ paths:
                 type: integer
               message:
                 type: string
+   
     post:
       tags:
         - Operators
@@ -783,10 +753,10 @@ paths:
           schema:
             $ref: '#/definitions/Operator'
       responses:
-        201:
-          description: "Operator created successfully"
-        400:
-          description: "Invalid input data"
+      201:
+        description: "Operator created successfully"
+      400:
+        description: "Invalid input data"
   /operators/{id}:
     get:
       tags:
@@ -851,12 +821,88 @@ paths:
           description: "Operator deleted successfully"
         404:
           description: "Operator not found"
+
+  /upload/priceList:
+    post:
+      tags:
+        - File Upload
+      summary: 'Upload a price list Excel file'
+      description: 'Allows users to upload a price list Excel file along with associated account ID. This endpoint accepts multipart/form-data content type.'
+      consumes:
+        - multipart/form-data
+      produces:
+        - application/json
+      parameters:
+        - in: formData
+          name: file
+          type: file
+          description: The Excel file to upload.
+          required: true
+        - in: formData
+          name: accountId
+          type: string
+          description: The account ID associated with the price list file.
+          required: true
+      responses:
+        '200':
+          description: 'Excel file processed successfully'
+        '400':
+          description: 'Bad Request (e.g., no file uploaded or missing account ID)'
+        '500':
+          description: 'Internal Server Error'
+
+  /upload/operators:
+    post:
+      tags:
+        - File Upload
+      summary: 'Upload an operator file'
+      description: 'Allows users to upload an operator file along with associated configuration for schema mapping. This endpoint accepts multipart/form-data for the file and a JSON object for the SchemaConfig.'
+      consumes:
+        - multipart/form-data
+      produces:
+        - application/json
+      parameters:
+        - in: formData
+          name: file
+          type: file
+          description: The file to upload.
+          required: true
+        - in: formData
+          name: SchemaConfig
+          type: string
+          description: 'JSON string that represents the schema configuration for parsing the uploaded file. This string should be a JSON representation of the SchemaConfig structure.'
+          required: true
+          example: |
+            {
+              "headerRow": 1,
+              "fields": {
+                "zone": ["Zone"],
+                "country": ["Country"],
+                "operator": ["Operator"],
+                "countryCode": ["CountryCode"],
+                "mobileCountryCode": ["MobileCountryCode"],
+                "mobileNetworkCode": ["MobileNetworkCode"],
+                "MCCMNC": ["MCCMNC"],
+                "zoneId": ["ZoneId"],
+                "countryId": ["CountryId"],
+                "operatorId": ["OperatorId"],
+                "active": ["Active"]
+              }
+            }
+      responses:
+        '200':
+          description: 'Operator file and SchemaConfig processed successfully'
+        '400':
+          description: 'Bad Request (e.g., no file uploaded or invalid SchemaConfig)'
+        '500':
+          description: 'Internal Server Error'
+
 definitions:
   users:
     type: object
     required:
-        - email
-        - password
+      - email
+      - password
     properties:
       email:
         type: string
@@ -876,7 +922,7 @@ definitions:
         type: string
       # Include additional properties your User model might have
 
-  AccountProfile:  # New definition for AccountProfile (complete)
+  AccountProfile: # New definition for AccountProfile (complete)
     type: object
     properties:
       ProfileDetails:
@@ -938,30 +984,30 @@ definitions:
             description: Apply time zone to rate notification
           currency:
             type: string
-            enum:  # Assuming your Currency enum is defined elsewhere
+            enum: # Assuming your Currency enum is defined elsewhere
               - EUR
               - USD
             description: Client's currency
           country:
             type: string
             description: Client's country
-          website: 
+          website:
             type: string
             description: Client's website URL
-          logo: 
+          logo:
             type: string
             description: URL or path to client's logo
-          vatRegistrationNumber: 
+          vatRegistrationNumber:
             type: string
-            description: Client's VAT registration number 
+            description: Client's VAT registration number
           clientIPAddresses:
             type: array
             items:
-                type: string
-                description: Client Ip address      
+              type: string
+              description: Client Ip address
 
       MO:
-        type : object
+        type: object
         properties:
           credit:
             type: number
@@ -989,7 +1035,7 @@ definitions:
           tax:
             type: number
             default: 0
-            description: The tax percentage applied to invoices sent to the client.            
+            description: The tax percentage applied to invoices sent to the client.
 
       MT:
         type: object
@@ -1023,15 +1069,15 @@ definitions:
             description: Time to wait to accept payment from the client.
           billingTerm:
             type: string
-            default: "monthly"
+            default: 'monthly'
             description: Frequency at which invoices will be generated, default is monthly.
           paymentType:
             type: string
-            enum: [ "Prepaid", "Postpaid" ]
+            enum: ['Prepaid', 'Postpaid']
             description: Type of payment, whether it's Prepaid or Postpaid.
           invoiceTemplate:
             type: string
-            enum: [ "EuroWithoutVAT", "EuroWithVAT", "USDWithoutVAT", "USDWithVAT", "Default" ]
+            enum: ['EuroWithoutVAT', 'EuroWithVAT', 'USDWithoutVAT', 'USDWithVAT', 'Default']
             description: Template used for invoicing, options include templates for different currencies and tax configurations.
 
       Bank:
@@ -1073,23 +1119,23 @@ definitions:
                   description: The profile associated with the account
                 accountType:
                   type: string
-                  enum: [ "Vendor", "Client" ]
+                  enum: ['Vendor', 'Client']
                   description: The type of account
                 businessType:
                   type: string
-                  enum: [ "Operator", "Hub", "Enterprise", "OTT", "Testing" ]
+                  enum: ['Operator', 'Hub', 'Enterprise', 'OTT', 'Testing']
                   description: The business type of the account
                 accountCategory:
                   type: string
-                  enum: [ "Direct", "Wholesale", "HighQuality", "SimBox", "Special", "Test" ]
+                  enum: ['Direct', 'Wholesale', 'HighQuality', 'SimBox', 'Special', 'Test']
                   description: The category of the account
                 accountMode:
                   type: string
-                  enum: [ "SMPP", "SS7", "Http" ]
+                  enum: ['SMPP', 'SS7', 'Http']
                   description: The mode of account operation
                 accountStatus:
                   type: string
-                  enum: [ "Active", "Inactive" ]
+                  enum: ['Active', 'Inactive']
                   description: The status of the account
                 timeZone:
                   type: string
@@ -1105,7 +1151,7 @@ definitions:
                   description: Whether to apply the account's time zone to rate notifications
                 currency:
                   type: string
-                  enum: [ "EUR", "USD" ]
+                  enum: ['EUR', 'USD']
                   description: The currency used by the account
 
             connection:
@@ -1158,7 +1204,7 @@ definitions:
                   description: Queue size for messages waiting to be sent
                 connectionMode:
                   type: string
-                  enum: [ "Transceiver", "Receiver", "Transmitter" ]
+                  enum: ['Transceiver', 'Receiver', 'Transmitter']
                   description: The mode of the connection
                 translationPrefix:
                   type: string
@@ -1173,7 +1219,7 @@ definitions:
                   description: Email address for receiving coverage reports
                 fileFormat:
                   type: string
-                  enum: [ "CSV", "XLS", "XLSX" ]
+                  enum: ['CSV', 'XLS', 'XLSX']
                   description: File format of the coverage reports
                 partialFileName:
                   type: string
@@ -1190,7 +1236,7 @@ definitions:
         properties:
           headerRow:
             type: integer
-            description: "Assuming headers start at the second row"
+            description: 'Assuming headers start at the second row'
             default: 1
           fields:
             type: object
@@ -1205,69 +1251,69 @@ definitions:
                 type: array
                 items:
                   type: string
-                description: "Possible header names for country"
+                description: 'Possible header names for country'
               MCC:
                 type: array
                 items:
                   type: string
-                description: "Possible header names for Mobile Country Code"
+                description: 'Possible header names for Mobile Country Code'
               MNC:
                 type: array
                 items:
                   type: string
-                description: "Possible header names for Mobile Network Code"
+                description: 'Possible header names for Mobile Network Code'
               price:
                 type: array
                 items:
                   type: string
-                description: "Possible header names for price"
+                description: 'Possible header names for price'
               currency:
                 type: array
                 items:
                   type: string
-                default: ["EUR"]
+                default: ['EUR']
                 description: "Default to 'EUR' if column is absent or value is missing. Possible header names for currency"
 
   Operator:
     type: object
     properties:
-        id:
-          type: string
-          description: Unique identifier for the operator
-        zone:
-          type: string
-          description: Geographical zone where the operator is active
-        country:
-          type: string
-          description: Country of the operator
-        operator:
-          type: string
-          description: Name of the operator
-        countryCode:
-          type: string
-          description: Country code associated with the operator
-        mobileCountryCode:
-          type: string
-          description: Mobile Country Code (MCC)
-        mobileNetworkCode:
-          type: string
-          description: Mobile Network Code (MNC)
-        MCCMNC:
-          type: string
-          description: Combined Mobile Country Code and Mobile Network Code
-        zoneId:
-          type: string
-          description: Identifier for the zone
-        countryId:
-          type: string
-          description: Identifier for the country
-        operatorId:
-          type: string
-          description: Identifier for the operator
-        active:
-          type: boolean
-          description: Status of the operator      
+      id:
+        type: string
+        description: Unique identifier for the operator
+      zone:
+        type: string
+        description: Geographical zone where the operator is active
+      country:
+        type: string
+        description: Country of the operator
+      operator:
+        type: string
+        description: Name of the operator
+      countryCode:
+        type: string
+        description: Country code associated with the operator
+      mobileCountryCode:
+        type: string
+        description: Mobile Country Code (MCC)
+      mobileNetworkCode:
+        type: string
+        description: Mobile Network Code (MNC)
+      MCCMNC:
+        type: string
+        description: Combined Mobile Country Code and Mobile Network Code
+      zoneId:
+        type: string
+        description: Identifier for the zone
+      countryId:
+        type: string
+        description: Identifier for the country
+      operatorId:
+        type: string
+        description: Identifier for the operator
+      active:
+        type: boolean
+        description: Status of the operator
 
-schemes:
- - https
- - http
+  schemes:
+    - https
+    - http

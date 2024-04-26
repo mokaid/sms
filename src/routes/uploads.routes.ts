@@ -1,4 +1,5 @@
 import { AuthMiddleware } from '@/middlewares/auth.middleware';
+import { OperatorsDto } from '@/dtos/operators.dto';
 import { Router } from 'express';
 import { Routes } from '@/interfaces/routes.interface';
 import { UploadController } from '@/controllers/uploads.controller';
@@ -23,6 +24,14 @@ export class UploadRoute implements Routes {
       ValidationMiddleware(UploadPriceListDto),
       AuthMiddleware,
       this.upload.uploadPriceList,
+    );
+
+    this.router.post(
+      `${this.path}/operators`,
+      this.uploader.single('file'),
+      ValidationMiddleware(OperatorsDto),
+      AuthMiddleware,
+      this.upload.uploadOperators,
     );
   }
 }

@@ -26,6 +26,24 @@ export class OperatorsService {
     }
   }
 
+  public async createOperators(operatorsData: any[]): Promise<Operators[]> {
+    const session = await this.operatorsModel.db.startSession();
+    session.startTransaction();
+    try {
+      const operators = await this.operatorsModel.insertMany(operatorsData, { session });
+
+      await session.commitTransaction();
+      session.endSession();
+
+      return operators;
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      console.error('Error during operators bulk creation:', error);
+      throw new HttpException(500, 'Error during operators bulk creation');
+    }
+  }
+
   public async findOperatorById(operatorId: string): Promise<Operators> {
     const operator = await this.operatorsModel.findOne({ _id: operatorId }).exec();
     if (!operator) {

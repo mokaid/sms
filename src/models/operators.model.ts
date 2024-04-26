@@ -33,5 +33,5 @@ export class Operators {
   public operatorId: string;
 
   @prop({ required: false })
-  public active: boolean;
+  public active: string;
 }

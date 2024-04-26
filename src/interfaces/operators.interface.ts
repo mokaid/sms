@@ -9,5 +9,5 @@ export interface IOperators {
   zoneId?: string;
   countryId?: string;
   operatorId?: string;
-  active?: boolean;
+  active?: string;
 }
