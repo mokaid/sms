@@ -291,15 +291,15 @@ export class ProfileService {
       .toString('utf8')
       .split('\n')
       .filter(line => line.trim() !== '');
-    const headers: string[] = lines[schemaConfig.headerRow - 1].split(',').map(header => header.trim().replace(/^"|"$/g, ''));
+    const headers: string[] = this.parseCsvLine(lines[schemaConfig.headerRow - 1]);
 
     const columnIndexMap: { [key: string]: number } = {};
     Object.entries(schemaConfig.fields).forEach(([fieldName, possibleHeaders]) => {
-      columnIndexMap[fieldName] = headers.findIndex(header => possibleHeaders.some(possibleHeader => possibleHeader === header));
+      columnIndexMap[fieldName] = headers.findIndex(header => possibleHeaders.includes(header));
     });
 
     return lines.slice(schemaConfig.headerRow).map(line => {
-      const data = line.split(',').map(cell => cell.trim().replace(/^"|"$/g, ''));
+      const data = this.parseCsvLine(line);
       const obj: Partial<ParsedItem> = {};
       Object.entries(columnIndexMap).forEach(([fieldName, index]) => {
         if (index >= 0) {
@@ -311,6 +311,30 @@ export class ProfileService {
 
       return obj as ParsedItem;
     });
+  }
+
+  private parseCsvLine(line: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"' && (i === 0 || line[i - 1] !== '\\')) {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    if (current !== '') {
+      result.push(current.trim());
+    }
+
+    return result;
   }
 
   public async updatePriceList(accountId: string, newPriceListItems: any[], deleteAllExisting: boolean): Promise<void> {
