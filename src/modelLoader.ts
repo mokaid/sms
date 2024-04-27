@@ -1,7 +1,7 @@
 import { Account } from './models/accounts.model';
 import { Container } from 'typedi';
 import { History } from './models/history.model'; // Include if you have a History model as well.
-import { Operators } from './models/operators.model'; // Added import for Operators model
+import { Operator } from './models/operators.model'; // Added import for Operators model
 import { PriceListItem } from './models/prices.model';
 import { Profile } from './models/profiles.model';
 import { Users } from './models/users.model';
@@ -16,7 +16,7 @@ export function initializeModels(): void {
   const AccountModel = getModelForClass(Account);
   const PriceListItemModel = getModelForClass(PriceListItem);
   const HistoryModel = getModelForClass(History); // Assuming you have this
-  const OperatorsModel = getModelForClass(Operators); // Get model for Operators
+  const OperatorsModel = getModelForClass(Operator); // Get model for Operators
 
   // Set models in TypeDI container
   Container.set('UserModel', UserModel);

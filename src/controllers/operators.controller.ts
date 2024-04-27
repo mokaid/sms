@@ -31,8 +31,9 @@ export class OperatorsController {
         countryCode: req.query.countryCode as string,
         mobileCountryCode: req.query.mobileCountryCode as string,
         mobileNetworkCode: req.query.mobileNetworkCode as string,
-        MCCMNC: req.query.MCCMNC as string,
-        active: req.query.active === 'true' ? true : req.query.active === 'false' ? false : undefined,
+        MCC: req.query.MCC as string,
+        MNC: req.query.MNC as string,
+        active: req.query.active as string,
       };
 
       Object.keys(filters).forEach(key => filters[key] === undefined && delete filters[key]);

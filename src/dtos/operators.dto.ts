@@ -1,6 +1,4 @@
-import { IsBoolean, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
-
-import { Type } from 'class-transformer';
+import { IsOptional, IsString } from 'class-validator';
 
 export class OperatorsDto {
   @IsOptional()
@@ -32,18 +30,5 @@ export class OperatorsDto {
   MCCMNC?: string;
 
   @IsOptional()
-  @IsString()
-  zoneId?: string;
-
-  @IsOptional()
-  @IsString()
-  countryId?: string;
-
-  @IsOptional()
-  @IsString()
-  operatorId?: string;
-
-  @IsOptional()
-  @IsBoolean()
   active?: string;
 }

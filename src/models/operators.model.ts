@@ -1,7 +1,9 @@
-import { Severity, modelOptions, prop } from '@typegoose/typegoose';
+import { Ref, Severity, modelOptions, prop } from '@typegoose/typegoose';
+
+import { PriceListItem } from './prices.model';
 
 @modelOptions({ options: { allowMixed: Severity.ALLOW }, schemaOptions: { collection: 'operators', timestamps: true } })
-export class Operators {
+export class Operator {
   @prop({ required: false })
   public zone: string;
 
@@ -21,17 +23,14 @@ export class Operators {
   public mobileNetworkCode: string;
 
   @prop({ required: false })
-  public MCCMNC: string;
+  public MCC: string;
 
   @prop({ required: false })
-  public zoneId: string;
-
-  @prop({ required: false })
-  public countryId: string;
-
-  @prop({ required: false })
-  public operatorId: string;
+  public MNC: string;
 
   @prop({ required: false })
   public active: string;
+
+  @prop({ ref: () => PriceListItem })
+  public priceList?: Ref<PriceListItem>[];
 }

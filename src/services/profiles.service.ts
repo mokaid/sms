@@ -286,7 +286,7 @@ export class ProfileService {
     }
   }
 
-  public parseCsvWithSchema(content: Buffer | unknown[], schemaConfig: SchemaConfig): ParsedItem[] {
+  public parseCsvWithSchema(content: Buffer | unknown[], schemaConfig: SchemaConfig) {
     const lines: string[] = content
       .toString('utf8')
       .split('\n')
@@ -309,7 +309,7 @@ export class ProfileService {
 
       if (!obj.currency) obj.currency = 'EUR';
 
-      return obj as ParsedItem;
+      return obj;
     });
   }
 

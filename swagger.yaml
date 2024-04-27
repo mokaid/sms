@@ -708,10 +708,15 @@ paths:
             type: string
           description: "Mobile Network Code (MNC) associated with the operator."
         - in: query
-          name: MCCMNC
+          name: MCC
           schema:
             type: string
-          description: "Combined Mobile Country Code and Mobile Network Code."
+          description: "Mobile Country Code (MCC) associated with the operator."
+        - in: query
+          name: MNC
+          schema:
+            type: string
+          description: "Mobile Network Code (MNC) associated with the operator."
         - in: query
           name: active
           schema:
@@ -1297,19 +1302,13 @@ definitions:
         description: Mobile Country Code (MCC)
       mobileNetworkCode:
         type: string
-        description: Mobile Network Code (MNC)
-      MCCMNC:
+        description: Mobile Network Code (MNC)an ana
+      MCC:
         type: string
-        description: Combined Mobile Country Code and Mobile Network Code
-      zoneId:
+        description: Mobile Network Code (MCC)
+      MNC:
         type: string
-        description: Identifier for the zone
-      countryId:
-        type: string
-        description: Identifier for the country
-      operatorId:
-        type: string
-        description: Identifier for the operator
+        description: Mobile Network Code (MNC)                
       active:
         type: boolean
         description: Status of the operator

@@ -1,13 +1,13 @@
 import { Model } from 'mongoose';
 import { Inject, Service } from 'typedi';
 import { HttpException } from '@/exceptions/HttpException';
-import { Operators } from '@/models/operators.model';
+import { Operator } from '@/models/operators.model';
 
 @Service()
 export class OperatorsService {
-  constructor(@Inject('OperatorsModel') private operatorsModel: Model<Operators>) {}
+  constructor(@Inject('OperatorsModel') private operatorsModel: Model<Operator>) {}
 
-  public async createOperator(operatorData: any): Promise<Operators> {
+  public async createOperator(operatorData: any) {
     const session = await this.operatorsModel.db.startSession();
     session.startTransaction();
     try {
@@ -26,7 +26,17 @@ export class OperatorsService {
     }
   }
 
-  public async createOperators(operatorsData: any[]): Promise<Operators[]> {
+  public async createOperators(operatorsData: {
+    zone: string;
+    country: string;
+    operator: string;
+    countryCode: string;
+    mobileCountryCode: string;
+    mobileNetworkCode: string;
+    MCC: string;
+    MNC: string;
+    active: string;
+  }) {
     const session = await this.operatorsModel.db.startSession();
     session.startTransaction();
     try {
@@ -44,7 +54,7 @@ export class OperatorsService {
     }
   }
 
-  public async findOperatorById(operatorId: string): Promise<Operators> {
+  public async findOperatorById(operatorId: string) {
     const operator = await this.operatorsModel.findOne({ _id: operatorId }).exec();
     if (!operator) {
       throw new HttpException(404, "Operator doesn't exist");
@@ -52,13 +62,7 @@ export class OperatorsService {
     return operator;
   }
 
-  public async findAllOperators({
-    page = 1,
-    limit = 10,
-    orderBy = 'createdAt',
-    sortOrder = 'asc',
-    filters = {},
-  }): Promise<{ data: Operators[]; total: number }> {
+  public async findAllOperators({ page = 1, limit = 10, orderBy = 'createdAt', sortOrder = 'asc', filters = {} }) {
     const skip = (page - 1) * limit;
     const sortDirection = sortOrder === 'asc' ? 1 : -1;
 
@@ -86,7 +90,7 @@ export class OperatorsService {
     };
   }
 
-  public async updateOperator(operatorId: string, updateData: any): Promise<Operators> {
+  public async updateOperator(operatorId: string, updateData: any) {
     const operator = await this.operatorsModel.findByIdAndUpdate(operatorId, { $set: updateData }, { new: true }).exec();
     if (!operator) {
       throw new HttpException(404, 'Operator not found');
@@ -94,7 +98,7 @@ export class OperatorsService {
     return operator;
   }
 
-  public async deleteOperator(operatorId: string): Promise<Operators | null> {
+  public async deleteOperator(operatorId: string) {
     const operator = await this.operatorsModel.findByIdAndDelete(operatorId).exec();
     if (!operator) {
       throw new HttpException(404, 'Operator not found');

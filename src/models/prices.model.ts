@@ -2,6 +2,7 @@ import { Ref, Severity, modelOptions, prop } from '@typegoose/typegoose';
 
 import { Account } from './accounts.model';
 import { Currency } from '@/enums/common.enums';
+import { Operator } from './operators.model';
 
 @modelOptions({ options: { allowMixed: Severity.ALLOW }, schemaOptions: { collection: 'pricelistitems', timestamps: true } })
 export class PriceListItem {
@@ -25,4 +26,7 @@ export class PriceListItem {
 
   @prop({ type: String, required: true, enum: Currency, default: Currency.EUR })
   public currency: Currency;
+
+  @prop({ ref: () => Operator, required: true })
+  public operator: Ref<Operator>;
 }

@@ -60,34 +60,76 @@ export class UploadsService {
       const worksheet = workbook.Sheets[worksheetName];
       const csvContent = XLSX.utils.sheet_to_csv(worksheet, { FS: ',', RS: '\n' });
 
-      const parsedData = this.profile.parseCsvWithSchema(Buffer.from(csvContent, 'utf8'), SchemaConfig);
+      const parsedData = this.profile.parseCsvWithSchema(Buffer.from(csvContent, 'utf8'), SchemaConfig) as IOperators[];
 
-      const operatorsListItems = parsedData.map((item: IOperators) => ({
-        zone: item.zone,
-        country: item.country,
-        operator: item.operator,
-        countryCode: item.countryCode,
-        mobileCountryCode: item.mobileCountryCode,
-        mobileNetworkCode: item.mobileNetworkCode,
-        MCCMNC: item.MCCMNC,
-        zoneId: item.zoneId,
-        countryId: item.countryId,
-        operatorId: item.operatorId,
-        active: item.active,
-      }));
+      const operatorsToInsert = [];
+
+      for (const item of parsedData) {
+        const mccmncCodes = this.parseMCCMNC(item.MCCMNC || '');
+
+        for (const code of mccmncCodes) {
+          const operatorData = {
+            zone: item.zone,
+            country: item.country,
+            operator: item.operator,
+            countryCode: item.countryCode,
+            mobileCountryCode: item.mobileCountryCode,
+            mobileNetworkCode: item.mobileNetworkCode,
+            MCC: code.MCC,
+            MNC: code.MNC,
+            active: item.active,
+          };
+
+          operatorsToInsert.push(operatorData);
+        }
+      }
 
       await this.operators
-        .createOperators(operatorsListItems)
+        .createOperators(operatorsToInsert as any)
         .then(() => {
-          console.log('Operators list updated successfully.');
+          console.log('All operators created successfully.');
         })
-        .catch(() => {
-          throw new HttpException(500, 'Failed to update operators list');
+        .catch(error => {
+          console.error('Failed to bulk create operators', error);
+          throw new HttpException(500, 'Failed to bulk create operators');
         });
 
       return parsedData;
     } catch (error) {
+      console.error('Failed to process Operators file', error);
       throw new HttpException(500, 'Failed to process Operators file');
     }
+  }
+
+  private parseMCCMNC(rawMCCMNC: string) {
+    return rawMCCMNC.split(',').map(code => {
+      code = code.trim();
+
+      let mcc = '';
+      let mnc = '';
+
+      if (code.length === 5) {
+        mcc = code.substring(0, 3);
+        mnc = code.substring(3);
+      } else if (code.length === 6) {
+        mcc = code.substring(0, 3);
+        mnc = code.substring(3);
+      } else if (code.length === 4) {
+        mcc = code.substring(0, 3);
+        mnc = code.substring(3);
+      } else if (code.length === 3) {
+        mcc = code;
+        mnc = '000';
+      } else if (code.length < 3) {
+        mcc = code;
+        mnc = '000';
+      } else {
+        mcc = code.slice(0, -3);
+        mnc = code.slice(-3);
+      }
+
+      mnc = mnc.padStart(3, '0');
+      return { MCC: mcc, MNC: mnc };
+    });
   }
 }
