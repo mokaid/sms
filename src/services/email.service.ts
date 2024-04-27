@@ -6,6 +6,7 @@ import { ProfileService } from './profiles.service';
 import { Service } from 'typedi';
 import { imapConfig } from '@/config/email';
 import { simpleParser } from 'mailparser';
+import { formatCodeWithLeadingZeros } from '@/utils/helpers';
 
 @Service()
 class EmailFetcherService {
@@ -84,8 +85,8 @@ class EmailFetcherService {
 
                   const priceListItems = parsedData.map(item => ({
                     country: item.country,
-                    MCC: item.MCC,
-                    MNC: item.MNC,
+                    MCC: formatCodeWithLeadingZeros(item.MCC),
+                    MNC: formatCodeWithLeadingZeros(item.MNC),
                     price: item.price,
                     currency: item.currency,
                   }));

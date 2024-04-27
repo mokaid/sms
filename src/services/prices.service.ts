@@ -4,18 +4,22 @@ import { Inject, Service } from 'typedi';
 import { Account } from '@/models/accounts.model';
 import { HttpException } from '@/exceptions/HttpException';
 import { PriceListItem } from '@/models/prices.model';
-import { Currency } from '@/enums/common.enums';
+import { Operator } from '@/models/operators.model';
 
 @Service()
 export class PriceService {
   constructor(
     @Inject('AccountModel') private accountModel: Model<Account>,
     @Inject('PriceListItemModel') private priceListItemModel: Model<PriceListItem>,
+    @Inject('OperatorsModel') private operatorModel: Model<Operator>,
   ) {}
 
-  public async findPriceById(priceId: string): Promise<PriceListItem> {
-    const price = await this.priceListItemModel.findOne({ _id: priceId }).exec();
-
+  public async findPriceById(priceId: string) {
+    const price = await this.priceListItemModel
+      .findOne({ _id: priceId })
+      .populate({ path: 'operator', select: 'country MCC MNC operator' })
+      .populate({ path: 'account', select: 'details.name details.accountType details.businessType details.currency' })
+      .exec();
     if (!price) {
       throw new HttpException(409, "Price doesn't exist");
     }
@@ -23,27 +27,48 @@ export class PriceService {
     return price;
   }
 
-  public async createPriceList(priceListData: { currency: Currency }, accountId: string): Promise<PriceListItem> {
+  public async createPriceList(priceListData, accountId: string): Promise<PriceListItem> {
     console.log(`Creating price list for account ID: ${accountId}`);
 
     const session = await this.priceListItemModel.db.startSession();
     session.startTransaction();
+
     try {
       const priceListItem = new this.priceListItemModel({
         ...priceListData,
         account: accountId,
-        currency: priceListData.currency || 'EUR',
+        operator: undefined,
       });
+
+      // Find operator based on MCC and MNC
+      if (priceListData.MCC && priceListData.MNC) {
+        const operator = await this.operatorModel
+          .findOne({
+            MCC: priceListData.MCC,
+            MNC: priceListData.MNC,
+            active: 'True',
+          })
+          .session(session);
+
+        if (operator) {
+          priceListItem.operator = operator._id;
+        }
+      }
 
       await priceListItem.save({ session });
       console.log('PriceListItem created:', priceListItem);
 
+      // Update account with new price list item
       const accountUpdateResult = await this.accountModel
         .findByIdAndUpdate(accountId, { $push: { priceList: priceListItem._id } }, { new: true, session: session })
         .exec();
 
       if (!accountUpdateResult) {
         throw new HttpException(404, 'Account not found or update failed');
+      }
+
+      if (priceListItem.operator) {
+        await this.operatorModel.findByIdAndUpdate(priceListItem.operator, { $push: { priceList: priceListItem._id } }, { session: session });
       }
 
       await session.commitTransaction();
@@ -73,9 +98,10 @@ export class PriceService {
       .find(priceListMatch)
       .populate({
         path: 'account',
-        model: 'Account',
-        select: 'details.name details.accountType details.businessType',
+        select: 'details.name details.accountType details.businessType details.currency',
       })
+      .populate({ path: 'operator', select: 'country MCC MNC operator' })
+
       .sort({ [orderBy]: sortOrder })
       .skip(skip)
       .limit(limit);
@@ -85,17 +111,7 @@ export class PriceService {
     const total = await this.priceListItemModel.countDocuments(priceListMatch);
 
     return {
-      data: priceListItems.map((item: any) => ({
-        ...item.toObject(),
-        account: item.account
-          ? {
-              name: item.account.details.name,
-              accountType: item.account.details.accountType,
-              businessType: item.account.details.businessType,
-              id: item.account._id,
-            }
-          : null,
-      })),
+      data: priceListItems,
       total,
       page,
       limit,
@@ -112,6 +128,7 @@ export class PriceService {
       }
 
       await this.accountModel.updateMany({ priceList: customId }, { $pull: { priceList: customId } }, { session });
+      await this.operatorModel.updateMany({ priceList: customId }, { $pull: { priceList: customId } }, { session });
 
       await session.commitTransaction();
       session.endSession();
@@ -139,7 +156,7 @@ export class PriceService {
       for (const [key, value] of Object.entries(newPriceData)) {
         if (value !== priceListItem[key]) {
           if (key === 'price') {
-            updates.oldPrice = priceListItem.price; // Set current price as oldPrice before updating
+            updates.oldPrice = priceListItem.price;
           }
           updates[key] = value;
         }

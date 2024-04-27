@@ -8,6 +8,7 @@ import { ProfileService } from './profiles.service';
 import { UploadFile } from '@/interfaces/uploads.interface';
 import { OperatorsService } from './operators.service';
 import { IOperators } from '@/interfaces/operators.interface';
+import { formatCodeWithLeadingZeros } from '@/utils/helpers';
 
 @Service()
 export class UploadsService {
@@ -32,8 +33,8 @@ export class UploadsService {
 
       const priceListItems = parsedData.map(item => ({
         country: item.country,
-        MCC: item.MCC,
-        MNC: item.MNC,
+        MCC: formatCodeWithLeadingZeros(item.MCC),
+        MNC: formatCodeWithLeadingZeros(item.MNC),
         price: item.price,
         currency: item.currency,
       }));

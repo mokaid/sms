@@ -74,9 +74,11 @@ export class PriceController {
   public updatePriceList = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const customId: string = req.params.id;
-      const priceListData = req.body;
+      const priceData = {
+        price: req.body.price,
+      };
 
-      const updatePriceListData = await this.price.updatePriceList(customId, priceListData);
+      const updatePriceListData = await this.price.updatePriceList(customId, priceData);
 
       res.status(200).json({ data: updatePriceListData, message: 'updated' });
     } catch (error) {
