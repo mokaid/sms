@@ -97,12 +97,4 @@ export class OperatorsService {
     }
     return operator;
   }
-
-  public async deleteOperator(operatorId: string) {
-    const operator = await this.operatorsModel.findByIdAndDelete(operatorId).exec();
-    if (!operator) {
-      throw new HttpException(404, 'Operator not found');
-    }
-    return operator;
-  }
 }

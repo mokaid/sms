@@ -9,6 +9,7 @@ import { Account } from '@/models/accounts.model';
 import { PriceListItem } from '@/models/prices.model';
 import { Profile } from '@/models/profiles.model';
 import { FileFormat } from '@/enums/accounts.enums';
+import { ObjectId } from 'mongodb';
 
 import xlsx from 'xlsx';
 import { AccountDto } from '@/dtos/accounts.dto';
@@ -164,12 +165,24 @@ export class ProfileService {
 
       const relatedAccounts = await this.accountModel.find({ profile: profileId }, '_id', { session }).exec();
       const accountIds = relatedAccounts.map(account => account._id);
+      const deletedPriceLists = await this.priceListItemModel.find({ account: { $in: accountIds } }, '_id operator', { session }).exec();
 
-      const accountsDeletion = await this.accountModel.deleteMany({ _id: { $in: accountIds } }, { session });
-      console.log(`${accountsDeletion.deletedCount} accounts deleted.`);
+      await this.accountModel.deleteMany({ _id: { $in: accountIds } }, { session });
+      await this.priceListItemModel.deleteMany({ account: { $in: accountIds } }, { session });
 
-      const priceListsDeletion = await this.priceListItemModel.deleteMany({ account: { $in: accountIds } }, { session });
-      console.log(`${priceListsDeletion.deletedCount} price lists deleted.`);
+      const operatorIdsToUpdate = deletedPriceLists.filter(priceList => priceList.operator).map(priceList => priceList.operator);
+
+      if (operatorIdsToUpdate.length > 0) {
+        const updatePromises = operatorIdsToUpdate.map((operatorId: ObjectId) => {
+          return this.operatorModel.updateOne(
+            { _id: new ObjectId(operatorId) },
+            { $pull: { priceList: { $in: deletedPriceLists.map(pl => new ObjectId(pl._id.toString())) } } },
+            { session },
+          );
+        });
+
+        await Promise.all(updatePromises);
+      }
 
       await session.commitTransaction();
       session.endSession();
@@ -338,61 +351,6 @@ export class ProfileService {
 
     return result;
   }
-
-  // public async updatePriceList(accountId: string, newPriceListItems: any[], deleteAllExisting: boolean): Promise<void> {
-  //   const session = await this.priceListItemModel.db.startSession();
-  //   session.startTransaction();
-  //   try {
-  //     const accountObjectId = new mongoose.Types.ObjectId(accountId);
-
-  //     const currentPrices = await this.priceListItemModel.find({ account: accountObjectId }).session(session);
-
-  //     if (deleteAllExisting) {
-  //       await this.priceListItemModel.deleteMany({ account: accountObjectId }, { session: session });
-
-  //       await this.accountModel.findByIdAndUpdate(accountId, { $set: { priceList: [] } }, { session: session });
-
-  //       const newItems = newPriceListItems.map(item => ({
-  //         ...item,
-  //         account: accountObjectId,
-  //       }));
-
-  //       const insertedItems = await this.priceListItemModel.insertMany(newItems, { session: session });
-
-  //       const newItemIds = insertedItems.map(item => item._id);
-  //       await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: { $each: newItemIds } } }, { session: session });
-  //     } else {
-  //       const priceMap = new Map(currentPrices.map(item => [item.MCC + '_' + item.MNC, item]));
-
-  //       for (const item of newPriceListItems) {
-  //         const key = item.MCC + '_' + item.MNC;
-  //         const existingPrice = priceMap.get(key);
-
-  //         if (existingPrice) {
-  //           if (existingPrice.price !== item.price) {
-  //             existingPrice.oldPrice = existingPrice.price;
-  //             existingPrice.price = item.price;
-  //             await existingPrice.save({ session: session });
-  //           }
-  //         } else {
-  //           const newItem = new this.priceListItemModel({
-  //             ...item,
-  //             account: accountObjectId,
-  //           });
-  //           await newItem.save({ session: session });
-  //           await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: newItem._id } }, { session: session });
-  //         }
-  //       }
-  //     }
-
-  //     await session.commitTransaction();
-  //     session.endSession();
-  //   } catch (error) {
-  //     await session.abortTransaction();
-  //     session.endSession();
-  //     throw error;
-  //   }
-  // }
 
   public async updatePriceList(accountId: string, newPriceListItems: any[], deleteAllExisting: boolean): Promise<void> {
     const session = await this.priceListItemModel.db.startSession();

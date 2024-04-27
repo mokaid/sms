@@ -20,6 +20,5 @@ export class OperatorsRoute implements Routes {
 
     this.router.post(`${this.path}`, AuthMiddleware, ValidationMiddleware(OperatorsDto), this.operatorsController.addOperator);
     this.router.put(`${this.path}/:id`, AuthMiddleware, ValidationMiddleware(OperatorsDto, true), this.operatorsController.updateOperator);
-    this.router.delete(`${this.path}/:id`, AuthMiddleware, this.operatorsController.deleteOperator);
   }
 }

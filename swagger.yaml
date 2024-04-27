@@ -783,23 +783,6 @@ paths:
           description: "Operator updated successfully"
         404:
           description: "Operator not found"
-    delete:
-      tags:
-        - Operators
-      summary: "Delete an operator"
-      description: "Deletes an operator identified by its ID."
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-          description: "Unique identifier of the operator to be deleted"
-      responses:
-        200:
-          description: "Operator deleted successfully"
-        404:
-          description: "Operator not found"
 
   /upload/priceList:
     post:

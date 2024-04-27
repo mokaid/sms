@@ -82,15 +82,4 @@ export class OperatorsController {
       next(error);
     }
   };
-
-  public deleteOperator = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const operatorId: string = req.params.id;
-      const deletedOperator = await this.operatorService.deleteOperator(operatorId);
-
-      res.status(200).json({ data: deletedOperator, message: 'Operator deleted successfully' });
-    } catch (error) {
-      next(error);
-    }
-  };
 }

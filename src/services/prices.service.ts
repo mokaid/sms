@@ -40,7 +40,6 @@ export class PriceService {
         operator: undefined,
       });
 
-      // Find operator based on MCC and MNC
       if (priceListData.MCC && priceListData.MNC) {
         const operator = await this.operatorModel
           .findOne({
