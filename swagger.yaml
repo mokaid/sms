@@ -731,11 +731,13 @@ paths:
           schema:
             $ref: '#/definitions/Operator'
       responses:
-      201:
-        description: "Operator created successfully"
-      400:
-        description: "Invalid input data"
-  
+        200:
+          description: "Operator inserted successfully"
+        201:
+          description: "Operator created successfully"
+        400:
+          description: "Invalid input data"
+    
   /operators/{id}:
     get:
       tags:
@@ -1267,7 +1269,8 @@ definitions:
         type: string
         description: Mobile Network Code (MNC)                
       active:
-        type: boolean
+        type: string
+        enum: ['True', 'False']
         description: Status of the operator
 
   schemes:

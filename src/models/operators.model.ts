@@ -1,5 +1,6 @@
 import { Ref, Severity, modelOptions, prop } from '@typegoose/typegoose';
 
+import { Active } from '@/enums/common.enums';
 import { PriceListItem } from './prices.model';
 
 @modelOptions({ options: { allowMixed: Severity.ALLOW }, schemaOptions: { collection: 'operators', timestamps: true } })
@@ -28,8 +29,8 @@ export class Operator {
   @prop({ required: false })
   public MNC: string;
 
-  @prop({ required: false })
-  public active: string;
+  @prop({ required: true, enum: Active, type: String })
+  public active: Active;
 
   @prop({ ref: () => PriceListItem })
   public priceList?: Ref<PriceListItem>[];

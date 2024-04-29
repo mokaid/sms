@@ -1,3 +1,5 @@
+import { Active } from '@/enums/common.enums';
+
 export interface IOperators {
   MCCMNC: string;
   zone?: string;
@@ -20,5 +22,5 @@ export interface IOperatorsModel {
   mobileNetworkCode: string;
   MCC: string;
   MNC: string;
-  active: string;
+  active: Active;
 }

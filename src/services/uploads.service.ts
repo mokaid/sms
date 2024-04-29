@@ -85,6 +85,8 @@ export class UploadsService {
         }
       }
 
+      console.log(operatorsToInsert);
+
       await this.operators
         .createOperators(operatorsToInsert as any)
         .then(() => {

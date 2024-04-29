@@ -1,4 +1,6 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+
+import { Active } from '@/enums/common.enums';
 
 export class OperatorsDto {
   @IsOptional()
@@ -30,5 +32,6 @@ export class OperatorsDto {
   MCCMNC?: string;
 
   @IsOptional()
-  active?: string;
+  @IsString()
+  active: Active;
 }

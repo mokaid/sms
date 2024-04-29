@@ -75,7 +75,10 @@ export class OperatorsController {
     try {
       const operatorId: string = req.params.id;
       const operatorData = req.body;
-      const updateOperatorData = await this.operatorService.updateOperator(operatorId, operatorData);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { MCC, MNC, ...updateData } = operatorData;
+
+      const updateOperatorData = await this.operatorService.updateOperator(operatorId, updateData);
 
       res.status(200).json({ data: updateOperatorData, message: 'Operator updated' });
     } catch (error) {
