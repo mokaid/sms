@@ -57,7 +57,6 @@ export class PriceService {
       await priceListItem.save({ session });
       console.log('PriceListItem created:', priceListItem);
 
-      // Update account with new price list item
       const accountUpdateResult = await this.accountModel
         .findByIdAndUpdate(accountId, { $push: { priceList: priceListItem._id } }, { new: true, session: session })
         .exec();

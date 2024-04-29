@@ -252,11 +252,25 @@ export class ProfileService {
       }
 
       const accountsToRemove = existingAccounts.filter(id => !updatedAccounts.includes(id.toString()));
+      const deletedPriceLists = await this.priceListItemModel.find({ account: { $in: accountsToRemove } }, '_id operator', { session }).exec();
+
       await this.accountModel.deleteMany({ _id: { $in: accountsToRemove } }, { session });
-
       await this.profileModel.findByIdAndUpdate(profileId, { $set: { accounts: updatedAccounts } }, { session });
-
       await this.priceListItemModel.deleteMany({ account: { $in: accountsToRemove } }, { session });
+
+      const operatorIdsToUpdate = deletedPriceLists.filter(priceList => priceList.operator).map(priceList => priceList.operator);
+
+      if (operatorIdsToUpdate.length > 0) {
+        const updatePromises = operatorIdsToUpdate.map((operatorId: ObjectId) => {
+          return this.operatorModel.updateOne(
+            { _id: new ObjectId(operatorId) },
+            { $pull: { priceList: { $in: deletedPriceLists.map(pl => new ObjectId(pl._id.toString())) } } },
+            { session },
+          );
+        });
+
+        await Promise.all(updatePromises);
+      }
 
       await session.commitTransaction();
       session.endSession();
