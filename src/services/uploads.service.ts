@@ -50,7 +50,7 @@ export class UploadsService {
 
       return { parsedData, accountId };
     } catch (error) {
-      throw new HttpException(500, 'Failed to process Excel file');
+      throw new HttpException(500, `Failed to process Excel file : ${error}`);
     }
   }
 

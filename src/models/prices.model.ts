@@ -9,6 +9,12 @@ export class PriceListItem {
   public account: Ref<Account>;
 
   @prop({ required: false })
+  public MCC?: string;
+
+  @prop({ required: false })
+  public MNC?: string;
+
+  @prop({ required: false })
   public oldPrice?: string;
 
   @prop({ required: false })

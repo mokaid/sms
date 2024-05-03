@@ -7,6 +7,7 @@ import Container from 'typedi';
 import EmailFetcherService from './services/email.service';
 import { ErrorMiddleware } from '@middlewares/error.middleware';
 import { HistoryModel } from './models/history.model';
+import { OperatorsService } from './services/operators.service';
 import { Routes } from '@interfaces/routes.interface';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
@@ -50,6 +51,7 @@ class App {
     this.initializeSwagger();
     this.initializeErrorHandling();
     this.initializeEmailFetcher();
+    this.defaultOperatorRecord();
   }
 
   public async listen() {
@@ -78,7 +80,7 @@ class App {
     collections.forEach(collection => {
       const changeStream = mongoose.connection.collection(collection).watch(pipeline, { fullDocument: 'updateLookup' });
       changeStream.on('change', async (change: any) => {
-        console.log(`Change detected in ${collection}:`, change);
+        //console.log(`Change detected in ${collection}:`, change);
 
         if (change.updateDescription && change.updateDescription.updatedFields) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -122,6 +124,16 @@ class App {
   private initializeEmailFetcher() {
     Container.get(EmailFetcherService);
     console.log('Email fetcher initialized and started');
+  }
+
+  private async defaultOperatorRecord() {
+    const operatorsService = Container.get(OperatorsService);
+    try {
+      await operatorsService.ensureDefaultOperatorExists();
+      console.log('Default operator record ensured.');
+    } catch (error) {
+      console.error('Failed to ensure default operator record:', error);
+    }
   }
 
   private initializeRoutes(routes: Routes[]) {

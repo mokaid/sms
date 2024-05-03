@@ -40,18 +40,25 @@ export class PriceService {
         operator: undefined,
       });
 
-      if (priceListData.MCC && priceListData.MNC) {
-        const operator = await this.operatorModel
-          .findOne({
-            MCC: priceListData.MCC,
-            MNC: priceListData.MNC,
-            active: 'True',
-          })
-          .session(session);
+      let operator = await this.operatorModel
+        .findOne({
+          MCC: priceListData.MCC,
+          MNC: priceListData.MNC,
+          active: 'True',
+        })
+        .session(session);
 
-        if (operator) {
-          priceListItem.operator = operator._id;
-        }
+      if (!operator) {
+        console.log(`No operator found for MCC: ${priceListData.MCC}, MNC: ${priceListData.MNC}. Assigning default operator.`);
+        operator = await this.operatorModel.findOne({ MCC: '000', MNC: '000', active: 'True' }).session(session);
+      }
+
+      if (operator) {
+        priceListItem.operator = operator._id;
+        console.log(`Operator assigned with ID: ${operator._id}`);
+      } else {
+        console.error('No default operator available. Please check the database configuration.');
+        throw new HttpException(500, 'Internal Server Error: Default operator not configured.');
       }
 
       await priceListItem.save({ session });

@@ -372,15 +372,27 @@ export class ProfileService {
     try {
       const accountObjectId = new mongoose.Types.ObjectId(accountId);
 
+      // Fetch operators and create a map of them by MCC_MNC for quick lookup
       const operators = await this.operatorModel.find({ active: 'True' }).session(session);
       const operatorMap = new Map(operators.map(op => [op.MCC + '_' + op.MNC, op]));
+      const defaultOperator = operatorMap.get('000_000');
 
       if (deleteAllExisting) {
+        // Fetch existing price list items to find out which operators need updating
+        const existingItems = await this.priceListItemModel.find({ account: accountObjectId }, '_id operator').session(session);
+        const operatorUpdates = existingItems.map(item =>
+          this.operatorModel.findByIdAndUpdate(item.operator, { $pull: { priceList: item._id } }, { session: session }),
+        );
+
+        // Perform the deletions and operator updates
+        await Promise.all(operatorUpdates);
         await this.priceListItemModel.deleteMany({ account: accountObjectId }, { session: session });
         await this.accountModel.findByIdAndUpdate(accountId, { $set: { priceList: [] } }, { session: session });
 
+        // Insert new items and update the account and operators accordingly
         const newItems = newPriceListItems.map(item => {
-          const operator = operatorMap.get(item.MCC + '_' + item.MNC);
+          const operatorKey = item.MCC + '_' + item.MNC;
+          const operator = operatorMap.get(operatorKey) || defaultOperator;
           return {
             ...item,
             account: accountObjectId,
@@ -393,7 +405,7 @@ export class ProfileService {
 
         for (const item of insertedItems) {
           if (item.operator) {
-            await this.operatorModel.findByIdAndUpdate(item.operator, { $push: { priceList: item._id } }, { session: session });
+            await this.operatorModel.findByIdAndUpdate(item.operator, { $addToSet: { priceList: item._id } }, { session: session });
           }
         }
 
@@ -405,15 +417,14 @@ export class ProfileService {
         for (const item of newPriceListItems) {
           const key = item.MCC + '_' + item.MNC;
           const existingPrice = priceMap.get(key);
-          const operator = operatorMap.get(key);
 
-          if (existingPrice) {
-            if (existingPrice.price !== item.price) {
-              existingPrice.oldPrice = existingPrice.price;
-              existingPrice.price = item.price;
-              await existingPrice.save({ session: session });
-            }
-          } else {
+          const operator = operatorMap.get(key) || defaultOperator;
+
+          if (existingPrice && existingPrice.price !== item.price) {
+            existingPrice.oldPrice = existingPrice.price;
+            existingPrice.price = item.price;
+            await existingPrice.save({ session: session });
+          } else if (!existingPrice) {
             const newItem = new this.priceListItemModel({
               ...item,
               account: accountObjectId,
@@ -421,11 +432,10 @@ export class ProfileService {
             });
 
             const savedItem = await newItem.save({ session: session });
-
             await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: savedItem._id } }, { session: session });
 
             if (operator) {
-              await this.operatorModel.findByIdAndUpdate(operator._id, { $push: { priceList: savedItem._id } }, { session: session });
+              await this.operatorModel.findByIdAndUpdate(operator._id, { $addToSet: { priceList: savedItem._id } }, { session: session });
             }
           }
         }
@@ -434,6 +444,7 @@ export class ProfileService {
       await session.commitTransaction();
       session.endSession();
     } catch (error) {
+      console.error('Error during price list update:', error);
       await session.abortTransaction();
       session.endSession();
       throw error;
