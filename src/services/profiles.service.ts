@@ -367,87 +367,94 @@ export class ProfileService {
   }
 
   public async updatePriceList(accountId: string, newPriceListItems: any[], deleteAllExisting: boolean): Promise<void> {
-    const session = await this.priceListItemModel.db.startSession();
-    session.startTransaction();
-    try {
-      const accountObjectId = new mongoose.Types.ObjectId(accountId);
+    const maxRetries = 3; // Maximum number of retries
+    let attempt = 0; // Current attempt number
+    while (attempt < maxRetries) {
+      const session = await this.operatorModel.db.startSession();
+      try {
+        session.startTransaction();
+        const accountObjectId = new mongoose.Types.ObjectId(accountId);
 
-      // Fetch operators and create a map of them by MCC_MNC for quick lookup
-      const operators = await this.operatorModel.find({ active: 'True' }).session(session);
-      const operatorMap = new Map(operators.map(op => [op.MCC + '_' + op.MNC, op]));
-      const defaultOperator = operatorMap.get('000_000');
+        // Fetch operators and create a map of them by MCC_MNC for quick lookup
+        const operators = await this.operatorModel.find({ active: 'True' }).session(session);
+        const operatorMap = new Map(operators.map(op => [op.MCC + '_' + op.MNC, op]));
+        const defaultOperator = operatorMap.get('000_000');
 
-      if (deleteAllExisting) {
-        // Fetch existing price list items to find out which operators need updating
-        const existingItems = await this.priceListItemModel.find({ account: accountObjectId }, '_id operator').session(session);
-        const operatorUpdates = existingItems.map(item =>
-          this.operatorModel.findByIdAndUpdate(item.operator, { $pull: { priceList: item._id } }, { session: session }),
-        );
+        if (deleteAllExisting) {
+          const existingItems = await this.priceListItemModel.find({ account: accountObjectId }, '_id operator').session(session);
+          const operatorUpdates = existingItems.map(item =>
+            this.operatorModel.findByIdAndUpdate(item.operator, { $pull: { priceList: item._id } }, { session: session }),
+          );
 
-        // Perform the deletions and operator updates
-        await Promise.all(operatorUpdates);
-        await this.priceListItemModel.deleteMany({ account: accountObjectId }, { session: session });
-        await this.accountModel.findByIdAndUpdate(accountId, { $set: { priceList: [] } }, { session: session });
+          await Promise.all(operatorUpdates);
+          await this.priceListItemModel.deleteMany({ account: accountObjectId }, { session: session });
+          await this.accountModel.findByIdAndUpdate(accountId, { $set: { priceList: [] } }, { session: session });
 
-        // Insert new items and update the account and operators accordingly
-        const newItems = newPriceListItems.map(item => {
-          const operatorKey = item.MCC + '_' + item.MNC;
-          const operator = operatorMap.get(operatorKey) || defaultOperator;
-          return {
-            ...item,
-            account: accountObjectId,
-            operator: operator ? operator._id : undefined,
-          };
-        });
-
-        const insertedItems = await this.priceListItemModel.insertMany(newItems, { session: session });
-        const newItemIds = insertedItems.map(item => item._id);
-
-        for (const item of insertedItems) {
-          if (item.operator) {
-            await this.operatorModel.findByIdAndUpdate(item.operator, { $addToSet: { priceList: item._id } }, { session: session });
-          }
-        }
-
-        await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: { $each: newItemIds } } }, { session: session });
-      } else {
-        const currentPrices = await this.priceListItemModel.find({ account: accountObjectId }).session(session);
-        const priceMap = new Map(currentPrices.map((item: any) => [item.MCC + '_' + item.MNC, item]));
-
-        for (const item of newPriceListItems) {
-          const key = item.MCC + '_' + item.MNC;
-          const existingPrice = priceMap.get(key);
-
-          const operator = operatorMap.get(key) || defaultOperator;
-
-          if (existingPrice && existingPrice.price !== item.price) {
-            existingPrice.oldPrice = existingPrice.price;
-            existingPrice.price = item.price;
-            await existingPrice.save({ session: session });
-          } else if (!existingPrice) {
-            const newItem = new this.priceListItemModel({
+          const newItems = newPriceListItems.map(item => {
+            const operatorKey = item.MCC + '_' + item.MNC;
+            return {
               ...item,
               account: accountObjectId,
-              operator: operator ? operator._id : undefined,
-            });
+              operator: operatorMap.get(operatorKey) || defaultOperator,
+            };
+          });
 
-            const savedItem = await newItem.save({ session: session });
-            await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: savedItem._id } }, { session: session });
+          const insertedItems = await this.priceListItemModel.insertMany(newItems, { session: session });
+          const newItemIds = insertedItems.map(item => item._id);
 
-            if (operator) {
-              await this.operatorModel.findByIdAndUpdate(operator._id, { $addToSet: { priceList: savedItem._id } }, { session: session });
+          for (const item of insertedItems) {
+            if (item.operator) {
+              await this.operatorModel.findByIdAndUpdate(item.operator, { $addToSet: { priceList: item._id } }, { session: session });
+            }
+          }
+
+          await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: { $each: newItemIds } } }, { session: session });
+        } else {
+          const currentPrices = await this.priceListItemModel.find({ account: accountObjectId }).session(session);
+          const priceMap = new Map(currentPrices.map((item: any) => [item.MCC + '_' + item.MNC, item]));
+
+          for (const item of newPriceListItems) {
+            const key = item.MCC + '_' + item.MNC;
+            const existingPrice = priceMap.get(key);
+            const operator = operatorMap.get(key) || defaultOperator;
+
+            if (existingPrice && existingPrice.price !== item.price) {
+              existingPrice.oldPrice = existingPrice.price;
+              existingPrice.price = item.price;
+              await existingPrice.save({ session: session });
+            } else if (!existingPrice) {
+              const newItem = new this.priceListItemModel({
+                ...item,
+                account: accountObjectId,
+                operator: operator ? operator._id : undefined,
+              });
+
+              const savedItem = await newItem.save({ session: session });
+              await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: savedItem._id } }, { session: session });
+
+              if (operator) {
+                await this.operatorModel.findByIdAndUpdate(operator._id, { $addToSet: { priceList: savedItem._id } }, { session: session });
+              }
             }
           }
         }
-      }
 
-      await session.commitTransaction();
-      session.endSession();
-    } catch (error) {
-      console.error('Error during price list update:', error);
-      await session.abortTransaction();
-      session.endSession();
-      throw error;
+        await session.commitTransaction();
+        console.log('Transaction committed successfully');
+        session.endSession();
+        break; // If commit was successful, exit the loop
+      } catch (error) {
+        console.error(`Attempt ${attempt + 1} failed:`, error);
+        await session.abortTransaction();
+        session.endSession();
+        if (!error.hasErrorLabel('TransientTransactionError') || attempt + 1 >= maxRetries) {
+          throw error; // Throw if not a transient error or if max retries reached
+        }
+        // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt))); // Wait 2^attempt seconds
+      } finally {
+        attempt++;
+      }
     }
   }
 

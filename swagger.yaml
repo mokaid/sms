@@ -235,11 +235,11 @@ paths:
             type: string
             default: 'eq'
           description: Condition to apply on old price filter, can be 'gt', 'lt', or 'eq'.
-        - in: query
-          name: country
-          schema:
-            type: string
-          description: Country filter for dynamic search.
+        # - in: query
+        #   name: country
+        #   schema:
+        #     type: string
+        #   description: Country filter for dynamic search.
         - in: query
           name: mnc
           schema:
@@ -250,11 +250,11 @@ paths:
           schema:
             type: string
           description: Mobile Country Code (MCC) filter for dynamic search.
-        - in: query
-          name: currency
-          schema:
-            type: string
-          description: Currency filter for dynamic search.
+        # - in: query
+        #   name: currency
+        #   schema:
+        #     type: string
+        #   description: Currency filter for dynamic search.
       responses:
         200:
           description: OK
