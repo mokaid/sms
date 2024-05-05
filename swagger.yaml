@@ -861,6 +861,52 @@ paths:
         '500':
           description: 'Internal Server Error'
 
+  /configurations:
+    get:
+      tags:
+        - Configuration
+      summary: "Get all configurations"
+      description: "Retrieve all configuration settings."
+      produces:
+        - application/json
+      responses:
+        200:
+          description: "List of all configurations"
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Configuration'
+        500:
+          description: "Server Error"
+    put:
+      tags:
+        - Configuration
+      summary: "Update configuration"
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: "Configuration data to update"
+          required: true
+          schema:
+            $ref: '#/definitions/Configuration'
+      responses:
+        200:
+          description: "Configuration updated successfully"
+          schema:
+            $ref: '#/definitions/Configuration'
+        400:
+          description: "Invalid input, object invalid"
+        404:
+          description: "Configuration not found"
+        500:
+          description: "Server error"
+
+
+
 definitions:
   users:
     type: object
@@ -1272,6 +1318,28 @@ definitions:
         type: string
         enum: ['True', 'False']
         description: Status of the operator
+
+  Configuration:
+    type: object
+    properties:
+      numberOfDigits:
+        type: string
+        description: "Number of decimal places used throughout the system"
+      timeZone:
+        type: string
+        description: "System-wide time zone setting"
+      systemCurrency:
+        type: string
+        description: "Default system currency"
+      documentLimitSize:
+        type: string
+        description: "Maximum allowed size for document uploads, in MB"
+      rateSheetTemplate:
+        type: string
+        description: "Template for rate sheets"
+      exchangeRateUpdateMargin:
+        type: string
+        description: "Margin percentage for exchange rate updates"
 
   schemes:
     - https

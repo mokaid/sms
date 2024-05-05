@@ -1,4 +1,5 @@
 import { Account } from './models/accounts.model';
+import { Configuration } from './models/configurations.model';
 import { Container } from 'typedi';
 import { History } from './models/history.model'; // Include if you have a History model as well.
 import { Operator } from './models/operators.model'; // Added import for Operators model
@@ -15,16 +16,18 @@ export function initializeModels(): void {
   const ProfileModel = getModelForClass(Profile);
   const AccountModel = getModelForClass(Account);
   const PriceListItemModel = getModelForClass(PriceListItem);
-  const HistoryModel = getModelForClass(History); // Assuming you have this
-  const OperatorsModel = getModelForClass(Operator); // Get model for Operators
+  const HistoryModel = getModelForClass(History);
+  const OperatorsModel = getModelForClass(Operator);
+  const ConfigurationsModel = getModelForClass(Configuration);
 
   // Set models in TypeDI container
   Container.set('UserModel', UserModel);
   Container.set('ProfileModel', ProfileModel);
   Container.set('AccountModel', AccountModel);
   Container.set('PriceListItemModel', PriceListItemModel);
-  Container.set('HistoryModel', HistoryModel); // Set History model if you have it
-  Container.set('OperatorsModel', OperatorsModel); // Set Operators model in container
+  Container.set('HistoryModel', HistoryModel);
+  Container.set('OperatorsModel', OperatorsModel);
+  Container.set('ConfigurationsModel', ConfigurationsModel);
 
   console.log('Models initialized and set in container');
 }

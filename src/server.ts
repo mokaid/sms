@@ -1,5 +1,6 @@
 import App from '@/app';
 import { AuthRoute } from '@routes/auth.route';
+import { ConfigurationRoute } from './routes/configurations.route';
 import { HistoryRoute } from './routes/history.route';
 import { OperatorsRoute } from './routes/operators.route';
 import { PriceRoute } from './routes/prices.route';
@@ -18,6 +19,7 @@ const app = new App([
   new UploadRoute(),
   new HistoryRoute(),
   new OperatorsRoute(),
+  new ConfigurationRoute(),
 ]);
 
 app.listen();

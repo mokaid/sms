@@ -22,6 +22,8 @@ import morgan from 'morgan';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 
+initializeModels();
+
 const events = ['SIGTERM', 'SIGINT', 'beforeExit', 'rejectionHandled', 'unhandledRejection', 'uncaughtException', 'exit'];
 events.forEach(eventName => {
   console.log('listening on ', eventName);
@@ -30,8 +32,6 @@ events.forEach(eventName => {
     process.exit(1);
   });
 });
-
-initializeModels();
 
 class App {
   public app: express.Application;
