@@ -1,4 +1,4 @@
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { Inject, Service } from 'typedi';
 
 import { Account } from '@/models/accounts.model';
@@ -25,6 +25,24 @@ export class PriceService {
     }
 
     return price;
+  }
+
+  public async findPricesByIds(ids: string[], { page = 1, limit = 10, orderBy = 'createdAt', sort = 'asc' }) {
+    const sortOrder = sort === 'asc' ? 1 : -1;
+    const skip = (page - 1) * limit;
+
+    const prices = await this.priceListItemModel
+      .find({ _id: { $in: ids } })
+      .populate({ path: 'operator', select: 'country MCC MNC operator' })
+      .populate({ path: 'account', select: 'details.name details.accountType details.businessType details.currency' })
+      .sort({ [orderBy]: sortOrder })
+      .skip(skip)
+      .limit(limit)
+      .exec();
+
+    const total = await this.priceListItemModel.countDocuments({ _id: { $in: ids } });
+
+    return { data: prices, total };
   }
 
   public async createPriceList(priceListData, accountId: string): Promise<PriceListItem> {
@@ -180,6 +198,51 @@ export class PriceService {
       session.endSession();
       console.error('Failed to update price list:', error);
       throw error;
+    }
+  }
+
+  public async updatePricesByMccMnc(mcc: string | null, mnc: string | null, newPriceData: any): Promise<any> {
+    const session = await this.priceListItemModel.db.startSession();
+    session.startTransaction();
+    try {
+      const query: any = {};
+      if (mcc) query.MCC = mcc;
+      if (mnc) query.MNC = mnc;
+
+      const pricesToUpdate = await this.priceListItemModel.find(query).session(session);
+
+      if (pricesToUpdate.length === 0) {
+        throw new HttpException(404, 'No prices found with the specified MCC and MNC');
+      }
+
+      const bulkOps = pricesToUpdate.map(priceListItem => {
+        const updates = { $set: {} };
+        Object.entries(newPriceData).forEach(([key, value]) => {
+          if (key === 'price' && priceListItem.price !== value) {
+            updates.$set['oldPrice'] = priceListItem.price; // Save the old price
+            updates.$set['price'] = value; // Update the new price
+          } else if (priceListItem[key] !== value) {
+            updates.$set[key] = value; // Update other fields if they differ
+          }
+        });
+
+        return {
+          updateOne: {
+            filter: { _id: priceListItem._id },
+            update: updates,
+          },
+        };
+      });
+
+      const result = await this.priceListItemModel.bulkWrite(bulkOps, { session });
+      await session.commitTransaction();
+      session.endSession();
+      return result;
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      console.error(`Error updating prices by MCC and MNC: ${error.message}`);
+      throw new HttpException(500, `Error updating prices by MCC and MNC: ${error.message}`);
     }
   }
 }

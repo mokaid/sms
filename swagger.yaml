@@ -449,6 +449,124 @@ paths:
                     type: string
                     example: 'An error occurred while processing the request.'
 
+  /prices/fetchByIds:
+    post:
+      tags:
+        - Prices
+      summary: Get Prices by IDs
+      description: Retrieve price details for a list of provided price IDs with optional pagination and sorting.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Object containing an array of IDs
+          required: true
+          schema:
+            type: object
+            properties:
+              ids:
+                type: array
+                items:
+                  type: string
+        - in: query
+          name: page
+          description: Page number for pagination.
+          type: integer
+          default: 1
+        - in: query
+          name: limit
+          description: Number of records per page.
+          type: integer
+          default: 10
+        - in: query
+          name: orderBy
+          description: Field to order the records by.
+          type: string
+          default: createdAt
+        - in: query
+          name: sort
+          description: Sorting direction, can be 'asc' or 'desc'.
+          type: string
+          default: asc
+      responses:
+        200:
+          description: Prices fetched successfully
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/definitions/PriceListItem'
+              total:
+                type: integer
+              page:
+                type: integer
+              limit:
+                type: integer
+              message:
+                type: string
+        400:
+          description: Invalid input, array of IDs expected
+        500:
+          description: Server error
+  
+  /prices/byMccMnc:
+      put:
+        tags:
+          - Prices
+        summary: Update Prices by MCC or MNC
+        description: Update price details based on MCC or MNC provided as query parameters.
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - in: query
+            name: mcc
+            type: string
+            description: Mobile Country Code to filter prices.
+            required: false
+          - in: query
+            name: mnc
+            type: string
+            description: Mobile Network Code to filter prices.
+            required: false
+          - in: body
+            name: body
+            description: Data to update in the matched price records.
+            required: true
+            schema:
+              type: object
+              required: [price] 
+              properties:
+                price:
+                  type: string
+                  description: New price to update. This field is required if 'currency' is not provided.
+        responses:
+          200:
+            description: Prices updated successfully
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  description: Details of the update operation, including the number of documents modified.
+                message:
+                  type: string
+                  example: 'Prices updated successfully'
+          400:
+            description: Bad request due to missing MCC or MNC
+          404:
+            description: No matching prices found to update
+          500:
+            description: Internal server error
+
+
+
   /history/{id}:
     get:
       tags:
@@ -713,7 +831,7 @@ paths:
                 type: integer
               message:
                 type: string
-   
+  
     post:
       tags:
         - Operators

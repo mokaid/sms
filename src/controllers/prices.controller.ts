@@ -71,6 +71,58 @@ export class PriceController {
     }
   };
 
+  public getPricesByIds = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const ids = req.body.ids;
+      if (!ids || !Array.isArray(ids)) {
+        return res.status(400).json({ message: 'Invalid input, array of IDs expected' });
+      }
+
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const orderBy = (req.query.orderBy as string) || 'createdAt';
+      const sort = (req.query.sort as string) || 'asc';
+
+      const { data, total } = await this.price.findPricesByIds(ids, { page, limit, orderBy, sort });
+
+      res.status(200).json({
+        data,
+        total,
+        page,
+        limit,
+        message: 'Prices fetched successfully',
+      });
+    } catch (error) {
+      console.error('Error fetching price details:', error);
+      next(error);
+    }
+  };
+
+  public updatePricesByMccMnc = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { mcc, mnc } = req.query;
+      const newPriceData = req.body;
+
+      if (!mcc && !mnc) {
+        return res.status(400).json({ message: 'At least one of MCC or MNC must be specified.' });
+      }
+
+      const result = await this.price.updatePricesByMccMnc(mcc as string, mnc as string, newPriceData);
+
+      if (result.modifiedCount === 0) {
+        return res.status(404).json({ message: 'No prices found or updated with the specified MCC and MNC' });
+      }
+
+      res.status(200).json({
+        data: result,
+        message: `${result.modifiedCount} prices updated successfully`,
+      });
+    } catch (error) {
+      console.error('Error updating prices by MCC and MNC:', error);
+      next(error);
+    }
+  };
+
   public updatePriceList = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const customId: string = req.params.id;
