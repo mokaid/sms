@@ -1,4 +1,3 @@
-// AccountService.ts
 import { Service, Inject } from 'typedi';
 import { Account } from '../models/accounts.model';
 import { Model } from 'mongoose';

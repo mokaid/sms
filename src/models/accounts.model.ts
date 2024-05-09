@@ -109,6 +109,7 @@ class EmailCoveragelistDetails {
   @prop({ type: Boolean, default: false })
   deleteAllExisting: boolean;
 }
+
 @modelOptions({ options: { allowMixed: Severity.ALLOW }, schemaOptions: { collection: 'accounts', timestamps: true } })
 export class Account {
   @prop({ ref: () => Profile, required: true })
