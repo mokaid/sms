@@ -1,3 +1,4 @@
+import { AccountRoute } from './routes/accounts.route';
 import App from '@/app';
 import { AuthRoute } from '@routes/auth.route';
 import { ConfigurationRoute } from './routes/configurations.route';
@@ -20,6 +21,7 @@ const app = new App([
   new HistoryRoute(),
   new OperatorsRoute(),
   new ConfigurationRoute(),
+  new AccountRoute(),
 ]);
 
 app.listen();

@@ -23,6 +23,7 @@ export const AuthMiddleware = async (req: RequestWithUser, res: Response, next: 
 
     if (Authorization) {
       const { _id } = (await verify(Authorization, SECRET_KEY)) as DataStoredInToken;
+
       const userService = Container.get(UserService);
       const findUser = await userService.findUserById(_id);
 

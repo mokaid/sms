@@ -565,8 +565,6 @@ paths:
           500:
             description: Internal server error
 
-
-
   /history/{id}:
     get:
       tags:
@@ -1023,6 +1021,115 @@ paths:
         500:
           description: "Server error"
 
+  /accounts:
+    get:
+      tags:
+        - Accounts
+      summary: Find All Accounts
+      description: Retrieve a list of accounts with optional filters, pagination, and sorting.
+      parameters:
+        - in: query
+          name: page
+          type: integer
+          default: 1
+          description: Page number for pagination.
+        - in: query
+          name: limit
+          type: integer
+          default: 10
+          description: Number of accounts per page.
+        - in: query
+          name: orderBy
+          type: string
+          default: 'createdAt'
+          description: Field to order the accounts by.
+        - in: query
+          name: sort
+          type: string
+          default: 'asc'
+          description: Sorting direction, can be 'asc' or 'desc'.
+        - in: query
+          name: accountType
+          type: string
+          enum: ['Vendor', 'Client']
+          description: Filter by account type.
+        - in: query
+          name: nameOnly
+          type: boolean
+          default: false
+          description: Return only account names if true.
+      responses:
+        200:
+          description: An array of accounts
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/definitions/Account'
+              total:
+                type: integer
+              page:
+                type: integer
+              limit:
+                type: integer
+              message:
+                type: string
+        500:
+          description: Server error
+
+  /accounts/{id}:
+    get:
+      tags:
+        - Accounts
+      summary: Get Account By ID
+      description: Retrieve details of a specific account by its ID.
+      parameters:
+        - in: path
+          name: id
+          type: string
+          required: true
+          description: Unique identifier of the account.
+      responses:
+        200:
+          description: Account details
+          schema:
+            $ref: '#/definitions/Account'
+        404:
+          description: Account not found
+        500:
+          description: Server error
+
+    put:
+      tags:
+        - Accounts
+      summary: Update Account
+      description: Update details of a specific account.
+      parameters:
+        - in: path
+          name: id
+          type: string
+          required: true
+          description: Unique identifier of the account.
+        - in: body
+          name: body
+          description: Account data to update.
+          required: true
+          schema:
+            $ref: '#/definitions/AccountUpdate'
+      responses:
+        200:
+          description: Updated account details
+          schema:
+            $ref: '#/definitions/Account'
+        400:
+          description: Invalid input, object invalid
+        404:
+          description: Account not found
+        500:
+          description: Server error
+
 
 
 definitions:
@@ -1458,6 +1565,23 @@ definitions:
       exchangeRateUpdateMargin:
         type: string
         description: "Margin percentage for exchange rate updates"
+
+  Account:
+    type: object
+    required:
+      - id
+      - name
+    properties:
+      id:
+        type: string
+        description: Unique identifier for the account
+      name:
+        type: string
+        description: Name of the account
+      accountType:
+        type: string
+        enum: ['Vendor', 'Client']
+        description: Type of account
 
   schemes:
     - https
