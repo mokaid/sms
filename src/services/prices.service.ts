@@ -1,18 +1,22 @@
-import mongoose, { Model } from 'mongoose';
-import { Inject, Service } from 'typedi';
+import { Container, Service } from 'typedi';
 
 import { Account } from '@/models/accounts.model';
 import { HttpException } from '@/exceptions/HttpException';
-import { PriceListItem } from '@/models/prices.model';
+import { Model } from 'mongoose';
 import { Operator } from '@/models/operators.model';
+import { PriceListItem } from '@/models/prices.model';
 
 @Service()
 export class PriceService {
-  constructor(
-    @Inject('AccountModel') private accountModel: Model<Account>,
-    @Inject('PriceListItemModel') private priceListItemModel: Model<PriceListItem>,
-    @Inject('OperatorsModel') private operatorModel: Model<Operator>,
-  ) {}
+  private accountModel: Model<Account>;
+  private priceListItemModel: Model<PriceListItem>;
+  private operatorModel: Model<Operator>;
+
+  constructor() {
+    this.accountModel = Container.get<Model<Account>>('AccountModel');
+    this.priceListItemModel = Container.get<Model<PriceListItem>>('PriceListItemModel');
+    this.operatorModel = Container.get<Model<Operator>>('OperatorsModel');
+  }
 
   public async findPriceById(priceId: string) {
     const price = await this.priceListItemModel

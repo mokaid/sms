@@ -2,11 +2,12 @@ import 'reflect-metadata';
 
 import { CREDENTIALS, LOG_FORMAT, NODE_ENV, ORIGIN, PORT } from '@config';
 import { logger, stream } from '@utils/logger';
+import mongoose, { Model } from 'mongoose';
 
 import Container from 'typedi';
 import EmailFetcherService from './services/email.service';
 import { ErrorMiddleware } from '@middlewares/error.middleware';
-import { HistoryModel } from './models/history.model';
+import { History } from './models/history.model';
 import { OperatorsService } from './services/operators.service';
 import { Routes } from '@interfaces/routes.interface';
 import compression from 'compression';
@@ -17,7 +18,6 @@ import express from 'express';
 import helmet from 'helmet';
 import hpp from 'hpp';
 import { initializeModels } from './modelLoader';
-import mongoose from 'mongoose';
 import morgan from 'morgan';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
@@ -37,13 +37,12 @@ class App {
   public app: express.Application;
   public env: string;
   public port: string | number;
-  public historyModel: any;
+  private historyModel: Model<History>;
 
   constructor(routes: Routes[]) {
     this.app = express();
     this.env = NODE_ENV || 'development';
     this.port = PORT || 3000;
-    this.historyModel = HistoryModel;
 
     this.connectToDatabase();
     this.initializeMiddlewares();
@@ -52,6 +51,7 @@ class App {
     this.initializeErrorHandling();
     this.initializeEmailFetcher();
     this.defaultOperatorRecord();
+    this.historyModel = Container.get<Model<History>>('HistoryModel');
   }
 
   public async listen() {

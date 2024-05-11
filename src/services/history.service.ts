@@ -1,14 +1,18 @@
-import { HistoryModel } from '@/models/history.model';
+import { Container, Service } from 'typedi';
+
+import { History } from '@/models/history.model';
 import { HttpException } from '@/exceptions/HttpException';
-import { Service } from 'typedi';
+import { Model } from 'mongoose';
 
 @Service()
 export class HistoryService {
-  public historyModel: any;
+  private historyModel: Model<History>;
+
+  constructor() {
+    this.historyModel = Container.get<Model<History>>('HistoryModel');
+  }
 
   public async findHistoryById(refId: string) {
-    this.historyModel = HistoryModel;
-
     const history = await this.historyModel.find({ refId }).sort({ createdAt: -1 }).exec();
 
     if (!history) {

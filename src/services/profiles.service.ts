@@ -1,28 +1,33 @@
-import { ParsedItem, SchemaConfig } from '@/interfaces/email.interface';
-
-import { HttpException } from '@/exceptions/HttpException';
-import { ParsedMail } from 'mailparser';
-import { Service, Inject } from 'typedi';
 import 'reflect-metadata';
+
+import Container, { Service } from 'typedi';
+import { ParsedItem, SchemaConfig } from '@/interfaces/email.interface';
 import mongoose, { Model } from 'mongoose';
+
 import { Account } from '@/models/accounts.model';
+import { AccountDto } from '@/dtos/accounts.dto';
+import { FileFormat } from '@/enums/accounts.enums';
+import { HttpException } from '@/exceptions/HttpException';
+import { ObjectId } from 'mongodb';
+import { Operator } from '@/models/operators.model';
+import { ParsedMail } from 'mailparser';
 import { PriceListItem } from '@/models/prices.model';
 import { Profile } from '@/models/profiles.model';
-import { FileFormat } from '@/enums/accounts.enums';
-import { ObjectId } from 'mongodb';
-
 import xlsx from 'xlsx';
-import { AccountDto } from '@/dtos/accounts.dto';
-import { Operator } from '@/models/operators.model';
 
 @Service()
 export class ProfileService {
-  constructor(
-    @Inject('ProfileModel') private profileModel: Model<Profile>,
-    @Inject('AccountModel') private accountModel: Model<Account>,
-    @Inject('PriceListItemModel') private priceListItemModel: Model<PriceListItem>,
-    @Inject('OperatorsModel') private operatorModel: Model<Operator>,
-  ) {}
+  private profileModel: Model<Profile>;
+  private accountModel: Model<Account>;
+  private priceListItemModel: Model<PriceListItem>;
+  private operatorModel: Model<Operator>;
+
+  constructor() {
+    this.profileModel = Container.get<Model<Profile>>('ProfileModel');
+    this.accountModel = Container.get<Model<Account>>('AccountModel');
+    this.priceListItemModel = Container.get<Model<PriceListItem>>('PriceListItemModel');
+    this.operatorModel = Container.get<Model<Operator>>('OperatorsModel');
+  }
 
   public async createProfile(profileData: { ProfileDetails: { accountingReference: string }; Accounts: AccountDto[] }): Promise<Profile> {
     const session = await this.profileModel.db.startSession();

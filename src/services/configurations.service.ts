@@ -1,12 +1,16 @@
-import { Model } from 'mongoose';
-import { Inject, Service } from 'typedi';
-import { HttpException } from '@/exceptions/HttpException';
+import Container, { Service } from 'typedi';
+
 import { Configuration } from '@/models/configurations.model';
+import { HttpException } from '@/exceptions/HttpException';
+import { Model } from 'mongoose';
 
 @Service()
 export class ConfigurationService {
-  constructor(@Inject('ConfigurationsModel') private configurationModel: Model<Configuration>) {}
+  private configurationModel: Model<Configuration>;
 
+  constructor() {
+    this.configurationModel = Container.get<Model<Configuration>>('ConfigurationsModel');
+  }
   public async findAllConfigurations() {
     try {
       const configurations = await this.configurationModel.find({});

@@ -1,12 +1,16 @@
-import { Model } from 'mongoose';
-import { Inject, Service } from 'typedi';
+import Container, { Service } from 'typedi';
+
 import { HttpException } from '@/exceptions/HttpException';
+import { Model } from 'mongoose';
 import { Operator } from '@/models/operators.model';
 
 @Service()
 export class OperatorsService {
-  constructor(@Inject('OperatorsModel') private operatorsModel: Model<Operator>) {}
+  private operatorsModel: Model<Operator>;
 
+  constructor() {
+    this.operatorsModel = Container.get<Model<Operator>>('OperatorsModel');
+  }
   public async createOperator(operatorData: any) {
     const session = await this.operatorsModel.db.startSession();
     session.startTransaction();
@@ -73,7 +77,7 @@ export class OperatorsService {
 
     try {
       const operator = await this.operatorsModel.findOneAndUpdate(query, update, options).exec();
-      console.log('Default operator ensured:', operator);
+      console.log('Default operator ensured:');
       return operator;
     } catch (error) {
       console.error('Error ensuring default operator:', error);

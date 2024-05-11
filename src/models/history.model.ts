@@ -1,4 +1,4 @@
-import { Severity, getModelForClass, index, modelOptions, prop } from '@typegoose/typegoose';
+import { Severity, index, modelOptions, prop } from '@typegoose/typegoose';
 
 import mongoose from 'mongoose';
 
@@ -21,5 +21,3 @@ export class History {
   @prop({ type: () => [mongoose.Schema.Types.Mixed], required: true })
   public fields: any[];
 }
-
-export const HistoryModel = getModelForClass(History);

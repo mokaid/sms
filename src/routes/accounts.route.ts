@@ -14,5 +14,7 @@ export class AccountRoute implements Routes {
 
   private initializeRoutes() {
     this.router.get(`${this.path}`, AuthMiddleware, this.accountController.getAccounts);
+    this.router.get(`${this.path}/:id`, AuthMiddleware, this.accountController.getAccountById);
+    // this.router.put(`${this.path}/:id`, AuthMiddleware, ValidationMiddleware(AccountDto, true), this.accountController.updateAccount);
   }
 }

@@ -1,13 +1,13 @@
+import Container, { Service } from 'typedi';
 import { DataStoredInToken, TokenData } from '@interfaces/auth.interface';
 import { compare, hash } from 'bcrypt';
 
 import { HttpException } from '@/exceptions/HttpException';
-import { SECRET_KEY } from '@config';
-import { Inject, Service } from 'typedi';
-import { sign } from 'jsonwebtoken';
 import { Model } from 'mongoose';
+import { SECRET_KEY } from '@config';
 import { User } from '@/interfaces/users.interface';
 import { Users } from '@/models/users.model';
+import { sign } from 'jsonwebtoken';
 
 const createToken = (user: User): TokenData => {
   const dataStoredInToken: DataStoredInToken = { _id: user._id };
@@ -22,7 +22,11 @@ const createCookie = (tokenData: TokenData): string => {
 
 @Service()
 export class AuthService {
-  constructor(@Inject('UserModel') private userModel: Model<Users>) {}
+  private userModel: Model<Users>;
+
+  constructor() {
+    this.userModel = Container.get<Model<Users>>('UserModel');
+  }
 
   public async signup(userData: User): Promise<User> {
     const findUser: User = await this.userModel.findOne({ email: userData.email });

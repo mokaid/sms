@@ -1,14 +1,19 @@
+import Container, { Service } from 'typedi';
+
 import { CreateUserDto } from '@dtos/users.dto';
 import { HttpException } from '@/exceptions/HttpException';
-import { Inject, Service } from 'typedi';
+import { Model } from 'mongoose';
 import { User } from '@interfaces/users.interface';
 import { Users } from '@models/users.model';
 import { hash } from 'bcrypt';
-import { Model } from 'mongoose';
 
 @Service()
 export class UserService {
-  constructor(@Inject('UserModel') private userModel: Model<Users>) {}
+  private userModel: Model<Users>;
+
+  constructor() {
+    this.userModel = Container.get<Model<Users>>('UserModel');
+  }
 
   public async findAllUser(): Promise<User[]> {
     const users: User[] = await this.userModel.find();

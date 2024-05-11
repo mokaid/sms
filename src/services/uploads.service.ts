@@ -1,18 +1,24 @@
 import * as XLSX from 'xlsx';
 
+import Container, { Service } from 'typedi';
 import { IAccount, IEmailCoveragelistDetails } from '@/interfaces/accounts.interface';
-import { Inject, Service } from 'typedi';
 
 import { HttpException } from '@/exceptions/HttpException';
+import { IOperators } from '@/interfaces/operators.interface';
+import { OperatorsService } from './operators.service';
 import { ProfileService } from './profiles.service';
 import { UploadFile } from '@/interfaces/uploads.interface';
-import { OperatorsService } from './operators.service';
-import { IOperators } from '@/interfaces/operators.interface';
 import { formatCodeWithLeadingZeros } from '@/utils/helpers';
 
 @Service()
 export class UploadsService {
-  constructor(@Inject(() => ProfileService) private profile: ProfileService, @Inject(() => OperatorsService) private operators: OperatorsService) {}
+  private profile: ProfileService;
+  private operators: OperatorsService;
+
+  constructor() {
+    this.profile = Container.get(ProfileService);
+    this.operators = Container.get(OperatorsService);
+  }
 
   public async processRatesFile(file: UploadFile, accountId: string) {
     try {
