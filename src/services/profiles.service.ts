@@ -178,7 +178,7 @@ export class ProfileService {
       const operatorIdsToUpdate = deletedPriceLists.filter(priceList => priceList.operator).map(priceList => priceList.operator);
 
       if (operatorIdsToUpdate.length > 0) {
-        const updatePromises = operatorIdsToUpdate.map((operatorId: ObjectId) => {
+        const updatePromises = operatorIdsToUpdate.map((operatorId: any) => {
           return this.operatorModel.updateOne(
             { _id: new ObjectId(operatorId) },
             { $pull: { priceList: { $in: deletedPriceLists.map(pl => new ObjectId(pl._id.toString())) } } },
@@ -266,7 +266,7 @@ export class ProfileService {
       const operatorIdsToUpdate = deletedPriceLists.filter(priceList => priceList.operator).map(priceList => priceList.operator);
 
       if (operatorIdsToUpdate.length > 0) {
-        const updatePromises = operatorIdsToUpdate.map((operatorId: ObjectId) => {
+        const updatePromises = operatorIdsToUpdate.map((operatorId: any) => {
           return this.operatorModel.updateOne(
             { _id: new ObjectId(operatorId) },
             { $pull: { priceList: { $in: deletedPriceLists.map(pl => new ObjectId(pl._id.toString())) } } },

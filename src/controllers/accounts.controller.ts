@@ -30,7 +30,6 @@ export class AccountController {
         filterOptions,
       });
 
-      console.log(nameOnly, accountType, req.query);
       let responseData: any = accounts;
       if (nameOnly === 'true') {
         responseData = accounts.map((account: any) => ({
