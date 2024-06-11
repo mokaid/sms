@@ -1101,38 +1101,141 @@ paths:
         500:
           description: Server error
 
-    put:
+
+  /sells:
+    post:
       tags:
-        - Accounts
-      summary: Update Account
-      description: Update details of a specific account.
+        - Sell
+      summary: Create a new sell record
+      description: Create a new sell record with account and price items.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Sell data
+          required: true
+          schema:
+            $ref: '#/definitions/Sell'
+      responses:
+        201:
+          description: Sell record created successfully
+          schema:
+            $ref: '#/definitions/Sell'
+        400:
+          description: Invalid input
+        500:
+          description: Server error
+
+    get:
+      tags:
+        - Sell
+      summary: Get all sell records
+      description: Retrieve a list of all sell records with pagination and sorting options.
+      parameters:
+        - in: query
+          name: page
+          type: integer
+          default: 1
+          description: Page number for pagination.
+        - in: query
+          name: limit
+          type: integer
+          default: 10
+          description: Number of records per page.
+        - in: query
+          name: orderBy
+          type: string
+          default: 'createdAt'
+          description: The field to order the records by.
+        - in: query
+          name: sort
+          type: string
+          default: 'asc'
+          description: Sorting direction, can be 'asc' or 'desc'.
+      responses:
+        200:
+          description: List of sell records retrieved successfully
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/definitions/Sell'
+              total:
+                type: integer
+              page:
+                type: integer
+              limit:
+                type: integer
+              message:
+                type: string
+        500:
+          description: Server error
+
+  /sells/{id}:
+    get:
+      tags:
+        - Sell
+      summary: Get a sell record by ID
+      description: Retrieve a sell record by its ID.
       parameters:
         - in: path
           name: id
+          required: true
           type: string
-          required: true
-          description: Unique identifier of the account.
-        - in: body
-          name: body
-          description: Account data to update.
-          required: true
-          schema:
-            $ref: '#/definitions/AccountUpdate'
+          description: The ID of the sell record to retrieve.
       responses:
         200:
-          description: Updated account details
+          description: Sell record retrieved successfully
           schema:
-            $ref: '#/definitions/Account'
-        400:
-          description: Invalid input, object invalid
+            $ref: '#/definitions/Sell'
         404:
-          description: Account not found
+          description: Sell record not found
         500:
           description: Server error
 
 
 
 definitions:
+
+  Sell:
+    type: object
+    required:
+      - account
+      - priceItems
+    properties:
+      account:
+        type: string
+        description: The unique identifier of the account associated with this sell.
+      priceItems:
+        type: array
+        items:
+          $ref: '#/definitions/PriceItem'
+
+
+  PriceItem:
+    type: object
+    required:
+      - priceId
+      - currentPrice
+      - sellPrice
+    properties:
+      price:
+        type: string
+        description: Reference to the PriceListItem (only ID is stored).
+      currentPrice:
+        type: number
+        description: The current purchase price of the item.
+      sellPrice:
+        type: number
+        description: The selling price of the item.
+
+
+
   users:
     type: object
     required:

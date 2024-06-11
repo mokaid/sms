@@ -7,6 +7,7 @@ import { PriceListItem } from './models/prices.model';
 import { Profile } from './models/profiles.model';
 import { Users } from './models/users.model';
 import { getModelForClass } from '@typegoose/typegoose';
+import { Sell } from './models/sell.model';
 
 export function initializeModels(): void {
   console.log('Initializing models...');
@@ -19,6 +20,7 @@ export function initializeModels(): void {
   const HistoryModel = getModelForClass(History);
   const OperatorsModel = getModelForClass(Operator);
   const ConfigurationsModel = getModelForClass(Configuration);
+  const SellModel = getModelForClass(Sell);
 
   // Set models in TypeDI container
   Container.set('UserModel', UserModel);
@@ -28,6 +30,8 @@ export function initializeModels(): void {
   Container.set('HistoryModel', HistoryModel);
   Container.set('OperatorsModel', OperatorsModel);
   Container.set('ConfigurationsModel', ConfigurationsModel);
+  Container.set('SellModel', SellModel);
+
 
   console.log('Models initialized and set in container');
 }

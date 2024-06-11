@@ -9,6 +9,7 @@ import { ProfileRoute } from './routes/profiles.route';
 import { UploadRoute } from './routes/uploads.routes';
 import { UserRoute } from '@routes/users.route';
 import { ValidateEnv } from '@utils/validateEnv';
+import { SellRoute } from './routes/sell.route';
 
 ValidateEnv();
 
@@ -22,6 +23,7 @@ const app = new App([
   new OperatorsRoute(),
   new ConfigurationRoute(),
   new AccountRoute(),
+  new SellRoute()
 ]);
 
 app.listen();
