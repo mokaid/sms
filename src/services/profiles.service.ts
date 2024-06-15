@@ -386,29 +386,30 @@ export class ProfileService {
   }
 
   public async updatePriceList(accountId: string, newPriceListItems: any[], deleteAllExisting: boolean): Promise<void> {
-    const maxRetries = 3; // Maximum number of retries
+    const maxRetries = 5; // Maximum number of retries
     let attempt = 0; // Current attempt number
+  
     while (attempt < maxRetries) {
       const session = await this.operatorModel.db.startSession();
       try {
         session.startTransaction();
         const accountObjectId = new mongoose.Types.ObjectId(accountId);
-
+  
         // Fetch operators and create a map of them by MCC_MNC for quick lookup
         const operators = await this.operatorModel.find({ active: 'True' }).session(session);
         const operatorMap = new Map(operators.map(op => [op.MCC + '_' + op.MNC, op]));
         const defaultOperator = operatorMap.get('000_000');
-
+  
         if (deleteAllExisting) {
           const existingItems = await this.priceListItemModel.find({ account: accountObjectId }, '_id operator').session(session);
           const operatorUpdates = existingItems.map(item =>
             this.operatorModel.findByIdAndUpdate(item.operator, { $pull: { priceList: item._id } }, { session: session }),
           );
-
+  
           await Promise.all(operatorUpdates);
           await this.priceListItemModel.deleteMany({ account: accountObjectId }, { session: session });
           await this.accountModel.findByIdAndUpdate(accountId, { $set: { priceList: [] } }, { session: session });
-
+  
           const newItems = newPriceListItems.map(item => {
             const operatorKey = item.MCC + '_' + item.MNC;
             return {
@@ -417,47 +418,60 @@ export class ProfileService {
               operator: operatorMap.get(operatorKey) || defaultOperator,
             };
           });
-
+  
           const insertedItems = await this.priceListItemModel.insertMany(newItems, { session: session });
           const newItemIds = insertedItems.map(item => item._id);
-
+  
           for (const item of insertedItems) {
             if (item.operator) {
               await this.operatorModel.findByIdAndUpdate(item.operator, { $addToSet: { priceList: item._id } }, { session: session });
             }
           }
-
+  
           await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: { $each: newItemIds } } }, { session: session });
         } else {
           const currentPrices = await this.priceListItemModel.find({ account: accountObjectId }).session(session);
           const priceMap = new Map(currentPrices.map((item: any) => [item.MCC + '_' + item.MNC, item]));
-
+  
+          const newItems = [];
+          const updatedItems = [];
+  
           for (const item of newPriceListItems) {
             const key = item.MCC + '_' + item.MNC;
             const existingPrice = priceMap.get(key);
             const operator = operatorMap.get(key) || defaultOperator;
-
+  
             if (existingPrice && existingPrice.price !== item.price) {
               existingPrice.oldPrice = existingPrice.price;
               existingPrice.price = item.price;
-              await existingPrice.save({ session: session });
+              updatedItems.push(existingPrice.save({ session: session }));
             } else if (!existingPrice) {
-              const newItem = new this.priceListItemModel({
+              newItems.push({
                 ...item,
                 account: accountObjectId,
                 operator: operator ? operator._id : undefined,
               });
-
-              const savedItem = await newItem.save({ session: session });
-              await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: savedItem._id } }, { session: session });
-
-              if (operator) {
-                await this.operatorModel.findByIdAndUpdate(operator._id, { $addToSet: { priceList: savedItem._id } }, { session: session });
+            }
+          }
+  
+          if (newItems.length > 0) {
+            const insertedItems = await this.priceListItemModel.insertMany(newItems, { session: session });
+            const newItemIds = insertedItems.map(item => item._id);
+  
+            await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: { $each: newItemIds } } }, { session: session });
+  
+            for (const item of insertedItems) {
+              if (item.operator) {
+                await this.operatorModel.findByIdAndUpdate(item.operator, { $addToSet: { priceList: item._id } }, { session: session });
               }
             }
           }
+  
+          if (updatedItems.length > 0) {
+            await Promise.all(updatedItems);
+          }
         }
-
+  
         await session.commitTransaction();
         console.log('Transaction committed successfully');
         session.endSession();
@@ -476,6 +490,7 @@ export class ProfileService {
       }
     }
   }
+  
 
   public async findProfileByAccountEmail(accountEmail: string): Promise<{ success: boolean; data?: any; error?: string }> {
     const session = await this.profileModel.db.startSession();
