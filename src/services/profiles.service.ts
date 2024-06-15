@@ -132,7 +132,13 @@ export class ProfileService {
       .skip(skip)
       .limit(limit)
       .sort({ [orderBy]: sortDirection })
-      .exec();
+      .exec()
+      .then(profiles => profiles.map(profile => {
+        profile = profile.toObject();
+        profile.Accounts = profile.accounts;
+        delete profile.accounts;
+        return profile;
+      }));
 
     const countPromise = this.profileModel.countDocuments(searchQuery);
 
@@ -150,7 +156,13 @@ export class ProfileService {
           model: 'PriceListItem',
         },
       })
-      .exec();
+      .exec()
+      .then(profiles => profiles.map(profile => {
+        profile = profile.toObject();
+        profile.Accounts = profile.accounts;
+        delete profile.accounts;
+        return profile;
+      }));
 
     if (!profile) {
       throw new HttpException(409, "Profile doesn't exist");
