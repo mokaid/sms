@@ -121,6 +121,7 @@ export class OperatorsService {
   }
 
   public async updateOperator(operatorId: string, updateData: any) {
+    console.log(updateData)
     const operator = await this.operatorsModel.findByIdAndUpdate(operatorId, { $set: updateData }, { new: true }).exec();
     if (!operator) {
       throw new HttpException(404, 'Operator not found');

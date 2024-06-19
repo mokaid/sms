@@ -4,28 +4,35 @@ import { Sell } from '@/models/sell.model';
 import { HttpException } from '@/exceptions/HttpException';
 import { Account } from '@/models/accounts.model';
 import { PriceListItem } from '@/models/prices.model';
+import xlsx from 'xlsx';
+import nodemailer from 'nodemailer';
+import { Operator } from '@/models/operators.model';
+import { EMAIL_PASSWORD_SELL_RATES, EMAIL_SERVICE_SELL_RATES, EMAIL_USER_SELL_RATES } from '@/config';
 
 @Service()
 export class SellService {
   private sellModel: Model<Sell>;
+  private operatorModel: Model<Operator>;
 
   constructor() {
     this.sellModel = Container.get<Model<Sell>>('SellModel');
+    this.operatorModel = Container.get<Model<Operator>>('OperatorsModel');
   }
 
   public async createSell(account: Account, priceItems: PriceListItem[]) {
-
-    console.log(account, priceItems)
     const session = await this.sellModel.db.startSession();
     session.startTransaction();
     try {
-      const sell = new this.sellModel({  
+      const sell = new this.sellModel({
         account,
         priceItems,
       });
       await sell.save({ session });
 
       await session.commitTransaction();
+
+      await this.processSell(sell._id as any);
+
       return sell;
     } catch (error) {
       await session.abortTransaction();
@@ -79,6 +86,96 @@ export class SellService {
     } catch (error) {
       console.error('Error finding all sells:', error);
       throw new HttpException(500, 'Error finding all sells');
+    }
+  }
+
+  public async getSellDetails(sellId: string) {
+    const sell = await this.sellModel.findById(sellId).populate({
+      path: 'account',
+      populate: { path: 'emailCoverageList connection' }
+    }).populate({
+      path: 'priceItems.price'
+    }).exec();
+    
+    if (!sell) {
+      throw new HttpException(404, 'Sell record not found');
+    }
+
+    const priceItems = await Promise.all(sell.priceItems.map(async (item:any) => {
+      const operator = await this.operatorModel.findOne({ priceList: { $in: [item.price._id] } }).exec();
+      return {
+        price: item.price,
+        currentPrice: item.currentPrice,
+        sellPrice: item.sellPrice,
+        operator: operator ? operator.operator : null,
+        country: operator ? operator.country : null,
+      };
+    }));
+
+    return {
+      account: sell.account,
+      priceItems,
+    };
+  }
+
+  public generateCSV(sellDetails: { account: any, priceItems: any[] }) {
+    const { account, priceItems } = sellDetails;
+    const data = priceItems.map(item => ({
+      MNC: item.price.MNC,
+      MCC: item.price.MCC,
+      Price: item.sellPrice,
+      Operator: item.operator,
+      Country: item.country,
+    }));
+
+    const ws = xlsx.utils.json_to_sheet(data);
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, 'SellDetails');
+
+    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'csv' });
+    return buffer;
+  }
+
+  public async sendEmailWithAttachment(account: any, csvBuffer: Buffer) {
+    const transporter = nodemailer.createTransport({
+      service: EMAIL_SERVICE_SELL_RATES,
+      auth: {
+        user: EMAIL_USER_SELL_RATES,
+        pass: EMAIL_PASSWORD_SELL_RATES,
+      },
+    });
+
+    const mailOptions = {
+      from: EMAIL_USER_SELL_RATES,
+      to: account.emailCoverageList.email,
+      subject: 'Intellialgos Rates',
+      text: `Dear ${account.connection.userName},\n\nPlease find the attached CSV file with the latest Intellialgos rates.\n\nBest regards,\nIntellialgos Team`,
+      attachments: [
+        {
+          filename: 'intellialgos_rates.csv',
+          content: csvBuffer,
+        },
+      ],
+    };
+
+    await transporter.sendMail(mailOptions);
+  }
+
+  public generateInvoice() {
+    // Placeholder for generating invoice
+  }
+
+  public async processSell(sellId: string) {
+    try {
+      const sellDetails = await this.getSellDetails(sellId);
+      const csvBuffer = this.generateCSV(sellDetails);
+      await this.sendEmailWithAttachment(sellDetails.account, csvBuffer);
+
+      this.generateInvoice();
+
+      console.log('Sell processed successfully.');
+    } catch (error) {
+      console.error('Error processing sell:', error);
     }
   }
 }
