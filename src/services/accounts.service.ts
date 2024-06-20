@@ -18,23 +18,28 @@ export class AccountService {
     filterOptions,
   }): Promise<{ accounts: Account[]; totalAccounts: number }> {
     const queryConditions: any = {};
-
+  
     if (filterOptions.accountType) {
       queryConditions['details.accountType'] = filterOptions.accountType;
     }
-
+  
     const query = this.accountModel
       .find(queryConditions)
       .select('-priceList')
       .sort({ [orderBy]: sort === 'asc' ? 1 : -1 })
-      .skip((page - 1) * limit)
-      .limit(limit);
-
+      .skip((page - 1) * limit);
+  
+    // Only apply the limit if it is not -1
+    if (limit !== -1) {
+      query.limit(limit);
+    }
+  
     const accounts = await query.exec();
     const totalAccounts = await this.accountModel.countDocuments(queryConditions);
-
+  
     return { accounts, totalAccounts };
   }
+  
 
   public async findAccountById(accountId: string): Promise<Account> {
     const account = await this.accountModel.findById(accountId).select('-priceList').exec();

@@ -35,14 +35,18 @@ export class PriceService {
     const sortOrder = sort === 'asc' ? 1 : -1;
     const skip = (page - 1) * limit;
 
-    const prices = await this.priceListItemModel
-      .find({ _id: { $in: ids } })
-      .populate({ path: 'operator', select: 'country MCC MNC operator' })
-      .populate({ path: 'account', select: 'details.name details.accountType details.businessType details.currency' })
-      .sort({ [orderBy]: sortOrder })
-      .skip(skip)
-      .limit(limit)
-      .exec();
+    const query = this.priceListItemModel
+    .find({ _id: { $in: ids } })
+    .populate({ path: 'operator', select: 'country MCC MNC operator' })
+    .populate({ path: 'account', select: 'details.name details.accountType details.businessType details.currency' })
+    .sort({ [orderBy]: sortOrder })
+    .skip(skip);
+
+  if (limit !== -1) {
+    query.limit(limit);
+  }
+
+  const prices = await query.exec();
 
     const total = await this.priceListItemModel.countDocuments({ _id: { $in: ids } });
 

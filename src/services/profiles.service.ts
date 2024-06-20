@@ -103,7 +103,7 @@ export class ProfileService {
   ): Promise<{ profiles: Profile[]; totalProfiles: number }> {
     const skip = (page - 1) * limit;
     const sortDirection = sort === 'asc' ? 1 : -1;
-
+  
     const searchableFields = [
       'ProfileDetails.legalName',
       'ProfileDetails.accountingReference',
@@ -112,14 +112,14 @@ export class ProfileService {
       'ProfileDetails.phoneNumber',
       'ProfileDetails.currency',
     ];
-
+  
     const searchQuery = {
       $or: searchableFields.map(field => ({
         [field]: { $regex: searchTerm, $options: 'i' }, // Corrected: Options are now only specified here
       })),
     };
-
-    const profilesPromise = this.profileModel
+  
+    const query = this.profileModel
       .find(searchQuery)
       .populate({
         path: 'accounts',
@@ -130,21 +130,28 @@ export class ProfileService {
         // },
       })
       .skip(skip)
-      .limit(limit)
-      .sort({ [orderBy]: sortDirection })
-      .exec()
-      .then(profiles => profiles.map(profile => {
+      .sort({ [orderBy]: sortDirection });
+  
+    // Only apply the limit if it is not -1
+    if (limit !== -1) {
+      query.limit(limit);
+    }
+  
+    const profilesPromise = query.exec().then(profiles =>
+      profiles.map(profile => {
         profile = profile.toObject();
         profile.Accounts = profile.accounts;
         delete profile.accounts;
         return profile;
-      }));
-
+      }),
+    );
+  
     const countPromise = this.profileModel.countDocuments(searchQuery);
-
+  
     const [profiles, totalProfiles] = await Promise.all([profilesPromise, countPromise]);
     return { profiles, totalProfiles };
   }
+  
 
   public async findProfileById(profileId: string): Promise<Profile> {
     const profile = await this.profileModel
