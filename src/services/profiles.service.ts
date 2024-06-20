@@ -137,7 +137,7 @@ export class ProfileService {
       query.limit(limit);
     }
   
-    const profilesPromise = query.exec().then(profiles =>
+    const profilesPromise = query.exec().then((profiles:any) =>
       profiles.map(profile => {
         profile = profile.toObject();
         profile.Accounts = profile.accounts;
@@ -164,7 +164,7 @@ export class ProfileService {
         },
       })
       .exec()
-      .then(profile => {
+      .then((profile:any) => {
         if (profile) {
           profile = profile.toObject();
           profile.Accounts = profile.accounts;

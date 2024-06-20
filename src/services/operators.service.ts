@@ -91,37 +91,43 @@ export class OperatorsService {
     }
     return operator;
   }
-
-  public async findAllOperators({ page = 1, limit = 10, orderBy = 'createdAt', sortOrder = 'asc', filters = {} }) {
+  public async findAllOperators({ page = 1, limit = 10, orderBy = 'operator', sortOrder = 'asc', filters = {} }) {
     const skip = (page - 1) * limit;
     const sortDirection = sortOrder === 'asc' ? 1 : -1;
 
     const operatorFilters: Record<string, any> = {};
     Object.keys(filters).forEach(key => {
-      if (typeof filters[key] === 'string' && filters[key]) {
-        operatorFilters[key] = filters[key];
-      } else if (typeof filters[key] === 'boolean') {
-        operatorFilters[key] = filters[key];
-      }
+        if (typeof filters[key] === 'string' && filters[key]) {
+            operatorFilters[key] = filters[key];
+        } else if (typeof filters[key] === 'boolean') {
+            operatorFilters[key] = filters[key];
+        }
     });
 
-    const query = this.operatorsModel
-      .find(operatorFilters)
-      .sort({ [orderBy]: sortDirection })
-      .skip(skip)
-      .limit(limit);
 
-    const operators = await query.exec();
-    const total = await this.operatorsModel.countDocuments(operatorFilters);
+    try {
+        const query = this.operatorsModel
+            .find(operatorFilters)
+            .sort({ [orderBy]: sortDirection, _id: 1 }) 
+            .skip(skip)
+            .limit(limit);
 
-    return {
-      data: operators,
-      total,
-    };
-  }
+        const operators = await query.exec();
+        const total = await this.operatorsModel.countDocuments(operatorFilters);
+
+
+        return {
+            data: operators,
+            total,
+        };
+    } catch (error) {
+        console.error('Error in findAllOperators:', error);
+        throw new HttpException(500, 'Error finding all operators');
+    }
+}
+
 
   public async updateOperator(operatorId: string, updateData: any) {
-    console.log(updateData)
     const operator = await this.operatorsModel.findByIdAndUpdate(operatorId, { $set: updateData }, { new: true }).exec();
     if (!operator) {
       throw new HttpException(404, 'Operator not found');

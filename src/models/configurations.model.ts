@@ -22,4 +22,15 @@ export class Configuration {
 
   @prop({ required: false })
   public exchangeRateUpdateMargin?: string;
+
+  @prop({ required: false })
+  public sellRatesEmailSubject?: string;
+
+  @prop({ required: false })
+  public sellRatesEmailBody?: string;
+
+  @prop({ required: false })
+  public sellRatesEmailFileName?: string;
+
+
 }

@@ -25,4 +25,7 @@ export class Sell {
 
   @prop({ type: () => PriceItem, required: true })
   public priceItems: PriceItem[];
+
+  @prop({ type: () => String, required: false })
+  public attachmentData?: string; 
 }

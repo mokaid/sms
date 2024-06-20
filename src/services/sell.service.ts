@@ -8,15 +8,20 @@ import xlsx from 'xlsx';
 import nodemailer from 'nodemailer';
 import { Operator } from '@/models/operators.model';
 import { EMAIL_PASSWORD_SELL_RATES, EMAIL_SERVICE_SELL_RATES, EMAIL_USER_SELL_RATES } from '@/config';
+import { ConfigurationService } from './configurations.service';
 
 @Service()
 export class SellService {
   private sellModel: Model<Sell>;
   private operatorModel: Model<Operator>;
+  private configurationService: ConfigurationService;
+
 
   constructor() {
     this.sellModel = Container.get<Model<Sell>>('SellModel');
     this.operatorModel = Container.get<Model<Operator>>('OperatorsModel');
+    this.configurationService = Container.get(ConfigurationService);
+
   }
 
   public async createSell(account: Account, priceItems: PriceListItem[]) {
@@ -101,7 +106,7 @@ export class SellService {
       throw new HttpException(404, 'Sell record not found');
     }
 
-    const priceItems = await Promise.all(sell.priceItems.map(async (item:any) => {
+    const priceItems = await Promise.all(sell.priceItems.map(async (item: any) => {
       const operator = await this.operatorModel.findOne({ priceList: { $in: [item.price._id] } }).exec();
       return {
         price: item.price,
@@ -133,10 +138,20 @@ export class SellService {
     xlsx.utils.book_append_sheet(wb, ws, 'SellDetails');
 
     const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'csv' });
-    return buffer;
+    const csvData = xlsx.utils.sheet_to_csv(ws);
+
+    return { csvBuffer: buffer, csvData: csvData };
   }
 
   public async sendEmailWithAttachment(account: any, csvBuffer: Buffer) {
+
+    const config = await this.configurationService.findAllConfigurations();
+    const configData = config[0]; 
+
+    const subject = configData.sellRatesEmailSubject || 'Intellialgos Rates';
+    const body = configData.sellRatesEmailBody || `Dear ${account.connection.userName},\n\nPlease find the attached CSV file with the latest Intellialgos rates.\n\nBest regards,\nIntellialgos Team`;
+    const fileName = configData.sellRatesEmailFileName || 'intellialgos_rates.csv';
+
     const transporter = nodemailer.createTransport({
       service: EMAIL_SERVICE_SELL_RATES,
       auth: {
@@ -148,11 +163,11 @@ export class SellService {
     const mailOptions = {
       from: EMAIL_USER_SELL_RATES,
       to: account.emailCoverageList.email,
-      subject: 'Intellialgos Rates',
-      text: `Dear ${account.connection.userName},\n\nPlease find the attached CSV file with the latest Intellialgos rates.\n\nBest regards,\nIntellialgos Team`,
+      subject: subject,
+      text: `Dear ${account.connection.userName},${body}`,
       attachments: [
         {
-          filename: 'intellialgos_rates.csv',
+          filename: fileName,
           content: csvBuffer,
         },
       ],
@@ -166,16 +181,30 @@ export class SellService {
   }
 
   public async processSell(sellId: string) {
+    const session = await this.sellModel.db.startSession();
+    session.startTransaction();
     try {
       const sellDetails = await this.getSellDetails(sellId);
-      const csvBuffer = this.generateCSV(sellDetails);
+      const { csvBuffer, csvData } = this.generateCSV(sellDetails);
+      
+      const sell = await this.sellModel.findById(sellId).exec();
+      if (sell) {
+        sell.attachmentData = csvData;
+        await sell.save({ session });
+      }
+
       await this.sendEmailWithAttachment(sellDetails.account, csvBuffer);
 
       this.generateInvoice();
 
+      await session.commitTransaction();
       console.log('Sell processed successfully.');
     } catch (error) {
+      await session.abortTransaction();
       console.error('Error processing sell:', error);
+      throw new HttpException(500, 'Error processing sell');
+    } finally {
+      session.endSession();
     }
   }
 }

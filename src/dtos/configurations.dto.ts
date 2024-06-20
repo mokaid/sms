@@ -24,4 +24,19 @@ export class ConfigurationDto {
   @IsOptional()
   @IsString()
   public exchangeRateUpdateMargin?: string;
+
+  @IsOptional()
+  @IsString()
+  public sellRatesEmailSubject?: string;
+
+  @IsOptional()
+  @IsString()
+  public sellRatesEmailBody?: string;
+
+  @IsOptional()
+  @IsString()
+  public sellRatesEmailFileName?: string;
+
+
+
 }

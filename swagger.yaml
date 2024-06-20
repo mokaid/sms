@@ -1668,6 +1668,15 @@ definitions:
       exchangeRateUpdateMargin:
         type: string
         description: "Margin percentage for exchange rate updates"
+      sellRatesEmailSubject:
+        type: string
+        description: "Sell Rates Email FileName"
+      sellRatesEmailBody:
+        type: string
+        description: "Sell Rates Email Body"
+      sellRatesEmailFileName:
+        type: string
+        description: "Sell Rates Email FileName"
 
   Account:
     type: object
