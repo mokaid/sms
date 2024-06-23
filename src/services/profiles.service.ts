@@ -392,46 +392,116 @@ export class ProfileService {
     return result;
   }
 
-  public async updatePriceList(accountId: string, newPriceListItems: any[], deleteAllExisting: boolean): Promise<void> {
-    const maxRetries = 5; // Maximum number of retries
-    let attempt = 0; // Current attempt number
-  
-    while (attempt < maxRetries) {
-      const session = await this.operatorModel.db.startSession();
-      try {
-        session.startTransaction();
-        const accountObjectId = new mongoose.Types.ObjectId(accountId);
-  
-        // Fetch operators and create a map of them by MCC_MNC for quick lookup
-        const operators = await this.operatorModel.find({ active: 'True' }).session(session);
-        const operatorMap = new Map(operators.map(op => [op.MCC + '_' + op.MNC, op]));
-        const mccDefaultOperators = new Map<string, any>();
-  
-        // Create a map for MCC with '000' operator
-        for (const operator of operators) {
-          if (operator.MNC === '000') {
-            mccDefaultOperators.set(operator.MCC, operator);
+
+public async updatePriceList(accountId: string, newPriceListItems: any[], deleteAllExisting: boolean): Promise<void> {
+  const maxRetries = 5; // Maximum number of retries
+  let attempt = 0; // Current attempt number
+
+  while (attempt < maxRetries) {
+    const session = await this.operatorModel.db.startSession();
+    try {
+      session.startTransaction();
+      const accountObjectId = new mongoose.Types.ObjectId(accountId);
+
+      // Fetch operators and create a map of them by MCC_MNC for quick lookup
+      const operators = await this.operatorModel.find({ active: 'True' }).session(session);
+      const operatorMap = new Map(operators.map(op => [op.MCC + '_' + op.MNC, op]));
+      const mccDefaultOperators = new Map<string, any>();
+
+      // Create a map for MCC with '000' operator
+      for (const operator of operators) {
+        if (operator.MNC === '000') {
+          mccDefaultOperators.set(operator.MCC, operator);
+        }
+      }
+
+      if (deleteAllExisting) {
+        const existingItems = await this.priceListItemModel.find({ account: accountObjectId }, '_id operator').session(session);
+        const operatorUpdates = existingItems.map(item =>
+          this.operatorModel.findByIdAndUpdate(item.operator, { $pull: { priceList: item._id } }, { session: session }),
+        );
+
+        await Promise.all(operatorUpdates);
+        await this.priceListItemModel.deleteMany({ account: accountObjectId }, { session: session });
+        await this.accountModel.findByIdAndUpdate(accountId, { $set: { priceList: [] } }, { session: session });
+
+        const newItems = [];
+        const priceMap = new Map();
+
+        // Process new price list items
+        for (const item of newPriceListItems) {
+          const operatorKey = item.MCC + '_' + item.MNC;
+          const operator = operatorMap.get(operatorKey);
+
+          if (operator) {
+            newItems.push({
+              ...item,
+              account: accountObjectId,
+              operator: operator._id,
+            });
+          } else {
+            // If no exact match, find the default operator for the MCC
+            const defaultOperator = mccDefaultOperators.get(item.MCC);
+            if (defaultOperator) {
+              const existing = priceMap.get(item.MCC);
+              if (!existing || item.price > existing.price) {
+                priceMap.set(item.MCC, {
+                  ...item,
+                  account: accountObjectId,
+                  operator: defaultOperator._id,
+                });
+              }
+            }
           }
         }
-  
-        if (deleteAllExisting) {
-          const existingItems = await this.priceListItemModel.find({ account: accountObjectId }, '_id operator').session(session);
-          const operatorUpdates = existingItems.map(item =>
-            this.operatorModel.findByIdAndUpdate(item.operator, { $pull: { priceList: item._id } }, { session: session }),
-          );
-  
-          await Promise.all(operatorUpdates);
-          await this.priceListItemModel.deleteMany({ account: accountObjectId }, { session: session });
-          await this.accountModel.findByIdAndUpdate(accountId, { $set: { priceList: [] } }, { session: session });
-  
-          const newItems = [];
-          const priceMap = new Map();
-  
-          // Process new price list items
-          for (const item of newPriceListItems) {
-            const operatorKey = item.MCC + '_' + item.MNC;
-            const operator = operatorMap.get(operatorKey);
-  
+
+        // Add the highest price entries for default operators
+        newItems.push(...Array.from(priceMap.values()));
+
+        const insertedItems = await this.priceListItemModel.insertMany(newItems, { session: session });
+        const newItemIds = insertedItems.map(item => item._id);
+
+        for (const item of insertedItems) {
+          if (item.operator) {
+            await this.operatorModel.findByIdAndUpdate(item.operator, { $addToSet: { priceList: item._id } }, { session: session });
+          }
+        }
+
+        await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: { $each: newItemIds } } }, { session: session });
+      } else {
+        const currentPrices = await this.priceListItemModel.find({ account: accountObjectId }).session(session);
+        const priceMap = new Map(currentPrices.map((item: any) => [item.MCC + '_' + item.MNC, item]));
+        const defaultPriceMap = new Map<string, any>();
+
+        const newItems = [];
+        const updatedItems = [];
+
+        for (const item of newPriceListItems) {
+          const key = item.MCC + '_' + item.MNC;
+          const existingPrice = priceMap.get(key);
+          const operator = operatorMap.get(key);
+
+          if (existingPrice) {
+            // Update the existing price if it is different
+            if (existingPrice.price !== item.price) {
+              const commonRef = operatorMap.get(key)?.commonRef;
+              if (commonRef) {
+                const relatedOperators = await this.operatorModel.find({ commonRef }).session(session);
+                for (const relatedOperator of relatedOperators) {
+                  const relatedPrice = priceMap.get(relatedOperator.MCC + '_' + relatedOperator.MNC);
+                  if (relatedPrice && relatedPrice.price !== item.price) {
+                    relatedPrice.oldPrice = relatedPrice.price;
+                    relatedPrice.price = item.price;
+                    updatedItems.push(relatedPrice.save({ session: session }));
+                  }
+                }
+              } else {
+                existingPrice.oldPrice = existingPrice.price;
+                existingPrice.price = item.price;
+                updatedItems.push(existingPrice.save({ session: session }));
+              }
+            }
+          } else {
             if (operator) {
               newItems.push({
                 ...item,
@@ -439,12 +509,11 @@ export class ProfileService {
                 operator: operator._id,
               });
             } else {
-              // If no exact match, find the default operator for the MCC
               const defaultOperator = mccDefaultOperators.get(item.MCC);
               if (defaultOperator) {
-                const existing = priceMap.get(item.MCC);
-                if (!existing || item.price > existing.price) {
-                  priceMap.set(item.MCC, {
+                const existingDefault = defaultPriceMap.get(item.MCC);
+                if (!existingDefault || item.price > existingDefault.price) {
+                  defaultPriceMap.set(item.MCC, {
                     ...item,
                     account: accountObjectId,
                     operator: defaultOperator._id,
@@ -453,138 +522,103 @@ export class ProfileService {
               }
             }
           }
-  
-          // Add the highest price entries for default operators
-          newItems.push(...Array.from(priceMap.values()));
-  
-          const insertedItems = await this.priceListItemModel.insertMany(newItems, { session: session });
+        }
+
+        // Handle existing "Others" prices in the database
+        for (const [key, item] of priceMap.entries()) {
+          if (key.endsWith('_000')) {
+            const mcc = item.MCC;
+            const defaultOperator = mccDefaultOperators.get(mcc);
+            const newDefault = defaultPriceMap.get(mcc);
+
+            if (newDefault && item.price < newDefault.price) {
+              const commonRef = operatorMap.get(key)?.commonRef;
+              if (commonRef) {
+                const relatedOperators = await this.operatorModel.find({ commonRef }).session(session);
+                for (const relatedOperator of relatedOperators) {
+                  const relatedPrice = priceMap.get(relatedOperator.MCC + '_' + relatedOperator.MNC);
+                  if (relatedPrice && relatedPrice.price !== newDefault.price) {
+                    relatedPrice.oldPrice = relatedPrice.price;
+                    relatedPrice.price = newDefault.price;
+                    updatedItems.push(relatedPrice.save({ session: session }));
+                  }
+                }
+              } else {
+                item.oldPrice = item.price;
+                item.price = newDefault.price;
+                updatedItems.push(item.save({ session: session }));
+              }
+            } else {
+              defaultPriceMap.set(mcc, item);
+            }
+          }
+        }
+
+        // Add the highest price entries for default operators to newItems
+        newItems.push(...Array.from(defaultPriceMap.values()));
+
+        if (newItems.length > 0) {
+          const uniqueNewItems = newItems.filter(item => !item._id); // Ensure no duplicate _id values
+          const insertedItems = await this.priceListItemModel.insertMany(uniqueNewItems, { session: session });
           const newItemIds = insertedItems.map(item => item._id);
-  
+
+          await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: { $each: newItemIds } } }, { session: session });
+
           for (const item of insertedItems) {
             if (item.operator) {
               await this.operatorModel.findByIdAndUpdate(item.operator, { $addToSet: { priceList: item._id } }, { session: session });
             }
           }
-  
-          await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: { $each: newItemIds } } }, { session: session });
-        } else {
-          const currentPrices = await this.priceListItemModel.find({ account: accountObjectId }).session(session);
-          const priceMap = new Map(currentPrices.map((item: any) => [item.MCC + '_' + item.MNC, item]));
-          const defaultPriceMap = new Map<string, any>();
-  
-          const newItems = [];
-          const updatedItems = [];
-  
-          for (const item of newPriceListItems) {
-            const key = item.MCC + '_' + item.MNC;
-            const existingPrice = priceMap.get(key);
-            const operator = operatorMap.get(key);
-  
-            if (existingPrice) {
-              // Update the existing price if it is different
-              if (existingPrice.price !== item.price) {
-                const commonRef = operatorMap.get(key)?.commonRef;
-                if (commonRef) {
-                  const relatedOperators = await this.operatorModel.find({ commonRef }).session(session);
-                  for (const relatedOperator of relatedOperators) {
-                    const relatedPrice = priceMap.get(relatedOperator.MCC + '_' + relatedOperator.MNC);
-                    if (relatedPrice && relatedPrice.price !== item.price) {
-                      relatedPrice.oldPrice = relatedPrice.price;
-                      relatedPrice.price = item.price;
-                      updatedItems.push(relatedPrice.save({ session: session }));
-                    }
-                  }
-                }
-              }
-            } else {
-              if (operator) {
-                newItems.push({
-                  ...item,
-                  account: accountObjectId,
-                  operator: operator._id,
-                });
-              } else {
-                const defaultOperator = mccDefaultOperators.get(item.MCC);
-                if (defaultOperator) {
-                  const existingDefault = defaultPriceMap.get(item.MCC);
-                  if (!existingDefault || item.price > existingDefault.price) {
-                    defaultPriceMap.set(item.MCC, {
-                      ...item,
-                      account: accountObjectId,
-                      operator: defaultOperator._id,
-                    });
-                  }
-                }
-              }
-            }
-          }
-  
-          // Handle existing "Others" prices in the database
-          for (const [key, item] of priceMap.entries()) {
-            if (key.endsWith('_000')) {
-              const mcc = item.MCC;
-              const defaultOperator = mccDefaultOperators.get(mcc);
-              const newDefault = defaultPriceMap.get(mcc);
-  
-              if (newDefault && item.price < newDefault.price) {
-                const commonRef = operatorMap.get(key)?.commonRef;
-                if (commonRef) {
-                  const relatedOperators = await this.operatorModel.find({ commonRef }).session(session);
-                  for (const relatedOperator of relatedOperators) {
-                    const relatedPrice = priceMap.get(relatedOperator.MCC + '_' + relatedOperator.MNC);
-                    if (relatedPrice && relatedPrice.price !== newDefault.price) {
-                      relatedPrice.oldPrice = relatedPrice.price;
-                      relatedPrice.price = newDefault.price;
-                      updatedItems.push(relatedPrice.save({ session: session }));
-                    }
-                  }
-                }
-              } else {
-                defaultPriceMap.set(mcc, item);
-              }
-            }
-          }
-  
-          // Add the highest price entries for default operators to newItems
-          newItems.push(...Array.from(defaultPriceMap.values()));
-  
-          if (newItems.length > 0) {
-            const uniqueNewItems = newItems.filter(item => !item._id); // Ensure no duplicate _id values
-            const insertedItems = await this.priceListItemModel.insertMany(uniqueNewItems, { session: session });
-            const newItemIds = insertedItems.map(item => item._id);
-  
-            await this.accountModel.findByIdAndUpdate(accountId, { $push: { priceList: { $each: newItemIds } } }, { session: session });
-  
-            for (const item of insertedItems) {
-              if (item.operator) {
-                await this.operatorModel.findByIdAndUpdate(item.operator, { $addToSet: { priceList: item._id } }, { session: session });
-              }
-            }
-          }
-  
-          if (updatedItems.length > 0) {
-            await Promise.all(updatedItems);
-          }
         }
-  
-        await session.commitTransaction();
-        console.log('Transaction committed successfully');
-        session.endSession();
-        break; // If commit was successful, exit the loop
-      } catch (error) {
-        console.error(`Attempt ${attempt + 1} failed:`, error);
-        await session.abortTransaction();
-        session.endSession();
-        if (!error.hasErrorLabel('TransientTransactionError') || attempt + 1 >= maxRetries) {
-          throw error; // Throw if not a transient error or if max retries reached
+
+        if (updatedItems.length > 0) {
+          await Promise.all(updatedItems);
         }
-        // Exponential backoff
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt))); // Wait 2^attempt seconds
-      } finally {
-        attempt++;
       }
+
+      // Remove duplicate "Others" records, ensuring only the highest price remains
+      const othersPrices = await this.priceListItemModel.aggregate([
+        { $match: { account: accountObjectId, MNC: '000' } },
+        {
+          $group: {
+            _id: "$MCC",
+            maxPrice: { $max: "$price" },
+            docs: { $push: { id: "$_id", price: "$price" } }
+          }
+        }
+      ]).session(session);
+
+      for (const priceGroup of othersPrices) {
+        const docsToRemove = priceGroup.docs.filter(doc => doc.price !== priceGroup.maxPrice);
+        if (docsToRemove.length > 0) {
+          await this.priceListItemModel.deleteMany({ _id: { $in: docsToRemove.map(doc => doc.id) } }).session(session);
+        }
+      }
+
+      await session.commitTransaction();
+      console.log('Transaction committed successfully');
+      session.endSession();
+      break; // If commit was successful, exit the loop
+    } catch (error) {
+      console.error(`Attempt ${attempt + 1} failed:`, error);
+      await session.abortTransaction();
+      session.endSession();
+      if (!error.hasErrorLabel('TransientTransactionError') || attempt + 1 >= maxRetries) {
+        throw error; // Throw if not a transient error or if max retries reached
+      }
+      // Exponential backoff
+      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt))); // Wait 2^attempt seconds
+    } finally {
+      attempt++;
     }
   }
+}
+
+  
+  
+  
+  
+  
   
   
   
