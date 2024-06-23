@@ -50,7 +50,7 @@ class App {
     this.initializeSwagger();
     this.initializeErrorHandling();
     this.initializeEmailFetcher();
-    this.defaultOperatorRecord();
+    // this.defaultOperatorRecord();
     this.historyModel = Container.get<Model<History>>('HistoryModel');
   }
 
@@ -126,15 +126,15 @@ class App {
     console.log('Email fetcher initialized and started');
   }
 
-  private async defaultOperatorRecord() {
-    const operatorsService = Container.get(OperatorsService);
-    try {
-      await operatorsService.ensureDefaultOperatorExists();
-      console.log('Default operator record ensured.');
-    } catch (error) {
-      console.error('Failed to ensure default operator record:', error);
-    }
-  }
+  // private async defaultOperatorRecord() {
+  //   const operatorsService = Container.get(OperatorsService);
+  //   try {
+  //     await operatorsService.ensureDefaultOperatorExists();
+  //     console.log('Default operator record ensured.');
+  //   } catch (error) {
+  //     console.error('Failed to ensure default operator record:', error);
+  //   }
+  // }
 
   private initializeRoutes(routes: Routes[]) {
     routes.forEach(route => {

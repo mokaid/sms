@@ -34,4 +34,8 @@ export class Operator {
 
   @prop({ ref: () => PriceListItem })
   public priceList?: Ref<PriceListItem>[];
+
+  @prop({ required: false })
+  public commonRef: string;
+
 }

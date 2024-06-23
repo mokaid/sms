@@ -11,6 +11,7 @@ export interface IOperators {
   MCC?: string;
   MNC?: string;
   active?: string;
+  commonRef?:string
 }
 
 export interface IOperatorsModel {
@@ -23,4 +24,6 @@ export interface IOperatorsModel {
   MCC: string;
   MNC: string;
   active: Active;
+  commonRef:string
+
 }

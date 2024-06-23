@@ -58,31 +58,31 @@ export class OperatorsService {
     }
   }
 
-  public async ensureDefaultOperatorExists() {
-    const defaultOperatorData = {
-      zone: 'others',
-      country: 'others',
-      operator: 'others',
-      countryCode: '000',
-      mobileCountryCode: '000',
-      mobileNetworkCode: '000',
-      MCC: '000',
-      MNC: '000',
-      active: 'True',
-    };
+  // public async ensureDefaultOperatorExists() {
+  //   const defaultOperatorData = {
+  //     zone: 'others',
+  //     country: 'others',
+  //     operator: 'others',
+  //     countryCode: '000',
+  //     mobileCountryCode: '000',
+  //     mobileNetworkCode: '000',
+  //     MCC: '000',
+  //     MNC: '000',
+  //     active: 'True',
+  //   };
 
-    const query = { MCC: '000', MNC: '000' };
-    const update = { $setOnInsert: defaultOperatorData };
-    const options = { upsert: true, new: true, setDefaultsOnInsert: true };
+  //   const query = { MCC: '000', MNC: '000' };
+  //   const update = { $setOnInsert: defaultOperatorData };
+  //   const options = { upsert: true, new: true, setDefaultsOnInsert: true };
 
-    try {
-      const operator = await this.operatorsModel.findOneAndUpdate(query, update, options).exec();
-      console.log('Default operator ensured:');
-      return operator;
-    } catch (error) {
-      console.error('Error ensuring default operator:', error);
-    }
-  }
+  //   try {
+  //     const operator = await this.operatorsModel.findOneAndUpdate(query, update, options).exec();
+  //     console.log('Default operator ensured:');
+  //     return operator;
+  //   } catch (error) {
+  //     console.error('Error ensuring default operator:', error);
+  //   }
+  // }
 
   public async findOperatorById(operatorId: string) {
     const operator = await this.operatorsModel.findOne({ _id: operatorId }).exec();

@@ -34,4 +34,9 @@ export class OperatorsDto {
   @IsOptional()
   @IsString()
   active: Active;
+
+
+  @IsOptional()
+  @IsString()
+  commonRef: Active;
 }
