@@ -483,9 +483,18 @@ export class ProfileService {
             if (existingPrice) {
               // Update the existing price if it is different
               if (existingPrice.price !== item.price) {
-                existingPrice.oldPrice = existingPrice.price;
-                existingPrice.price = item.price;
-                updatedItems.push(existingPrice.save({ session: session }));
+                const commonRef = operatorMap.get(key)?.commonRef;
+                if (commonRef) {
+                  const relatedOperators = await this.operatorModel.find({ commonRef }).session(session);
+                  for (const relatedOperator of relatedOperators) {
+                    const relatedPrice = priceMap.get(relatedOperator.MCC + '_' + relatedOperator.MNC);
+                    if (relatedPrice && relatedPrice.price !== item.price) {
+                      relatedPrice.oldPrice = relatedPrice.price;
+                      relatedPrice.price = item.price;
+                      updatedItems.push(relatedPrice.save({ session: session }));
+                    }
+                  }
+                }
               }
             } else {
               if (operator) {
@@ -518,10 +527,18 @@ export class ProfileService {
               const newDefault = defaultPriceMap.get(mcc);
   
               if (newDefault && item.price < newDefault.price) {
-                updatedItems.push(this.priceListItemModel.findByIdAndUpdate(item._id, {
-                  price: newDefault.price,
-                  oldPrice: item.price,
-                }, { session: session }));
+                const commonRef = operatorMap.get(key)?.commonRef;
+                if (commonRef) {
+                  const relatedOperators = await this.operatorModel.find({ commonRef }).session(session);
+                  for (const relatedOperator of relatedOperators) {
+                    const relatedPrice = priceMap.get(relatedOperator.MCC + '_' + relatedOperator.MNC);
+                    if (relatedPrice && relatedPrice.price !== newDefault.price) {
+                      relatedPrice.oldPrice = relatedPrice.price;
+                      relatedPrice.price = newDefault.price;
+                      updatedItems.push(relatedPrice.save({ session: session }));
+                    }
+                  }
+                }
               } else {
                 defaultPriceMap.set(mcc, item);
               }
