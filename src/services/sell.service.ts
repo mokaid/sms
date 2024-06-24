@@ -8,20 +8,19 @@ import xlsx from 'xlsx';
 import nodemailer from 'nodemailer';
 import { Operator } from '@/models/operators.model';
 import { EMAIL_PASSWORD_SELL_RATES, EMAIL_SERVICE_SELL_RATES, EMAIL_USER_SELL_RATES } from '@/config';
-import { ConfigurationService } from './configurations.service';
+import { Configuration } from '@/models/configurations.model';
 
 @Service()
 export class SellService {
   private sellModel: Model<Sell>;
   private operatorModel: Model<Operator>;
-  private configurationService: ConfigurationService;
+  private configurationsModel: Model<Configuration>;
 
 
   constructor() {
     this.sellModel = Container.get<Model<Sell>>('SellModel');
     this.operatorModel = Container.get<Model<Operator>>('OperatorsModel');
-    this.configurationService = Container.get(ConfigurationService);
-
+    this.configurationsModel = Container.get<Model<Configuration>>('ConfigurationsModel');
   }
 
   public async createSell(account: Account, priceItems: PriceListItem[]) {
@@ -145,7 +144,7 @@ export class SellService {
 
   public async sendEmailWithAttachment(account: any, csvBuffer: Buffer) {
 
-    const config = await this.configurationService.findAllConfigurations();
+    const config = await this.configurationsModel.find({})
     const configData = config[0]; 
 
     const subject = configData.sellRatesEmailSubject || 'Intellialgos Rates';
